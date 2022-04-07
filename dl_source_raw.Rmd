@@ -1,0 +1,110 @@
+---
+title: "Srtoop deadline: creating raw data from source"
+author: "Zsuzsa Szekely"
+date: '`r format(Sys.time(), "%d %B, %Y")`'
+output: html_document
+editor_options: 
+  chunk_output_type: console
+---
+
+Load packages
+
+```{r load packages}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, janitor, jsonlite, rlist)
+```
+
+Load helper functions
+
+```{r load helper functions}
+source("R/utils.R")
+```
+
+Import and merge data
+
+```{r}
+# create list of the names of source files
+file_names <- list.files("data/deadline/source", include.dirs = TRUE)
+file_dirs <- list.dirs("data/deadline/source")
+
+# read csv files
+csv <- file_dirs %>% 
+  map_df(~read_csv(file_names))
+
+# csv <- file_list %>% 
+#   map_df(~read_csv(.))
+  
+
+# create tibble for checking source files before merging them
+## import data from csv-s into a tibble
+file_tibble_data <- tibble(name = paste0("data/deadline/source/", file_names),
+                           csv = map(name, read_csv)
+                           )
+
+## count rows and cols
+file_tibble <- file_tibble_data %>% 
+  mutate(row_n = map_dbl(csv, nrow), # check if the number of rows are equal in each csv
+         col_n = map_dbl(csv, ncol), # check if the number of columns are equal in each csv
+         col_names = map(csv, colnames)
+         )
+
+# add personal id to each csv
+file_tibble <- file_tibble %>% 
+  mutate(
+    id = row_number(),
+    csv = map2(csv, id,
+               ~ mutate(.x, participant_id = .y) 
+               ))
+
+# merge csv-s into one df
+source <- map_df(
+  file_tibble$csv,
+  ~ bind_rows(.x))
+
+
+# check if all csv-s were fully included. this means that the number of rows of source tibble divided with the number of csv-s (61) should equal with the number of rows of a single csv (497)
+nrow(source)/61
+
+# or in a different way, count how many times each participant_id appears (we expect n = 497 in each case)
+source %>%
+  group_by(participant_id) %>%
+  count() %>% 
+  ungroup()
+```
+
+Check if the task was fully completed by each participant
+
+```{r}
+source %>%
+  group_by(participant_id) %>%
+  count(ended_on) %>% 
+  # filter unfinished task completions
+  filter(any(is.na(ended_on))) %>% 
+  View()
+
+# 4 participants (participant_id: 13, 14, 35, 48) did not finish the task. We save these participants' data into a separate df and exclude them from source df.
+exclude <- c("13", "14", "35", "48")
+excluded <- source %>% 
+  filter(participant_id %in% exclude)
+
+source <- source %>% 
+  filter(!participant_id %in% exclude)
+
+# we should have 57 participants now
+count(source, participant_id)
+```
+
+Deidentify participants
+We need to remove any information that might identify the participants
+
+```{r deidentify participants}
+# join <- 
+#   join %>% 
+#   mutate(join = select(., -userId))
+```
+
+Save source data to file
+
+```{r}
+write_csv(source, "data/deadline/raw/raw_data.csv")
+```

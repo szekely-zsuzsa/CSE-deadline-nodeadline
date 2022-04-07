@@ -1,0 +1,70 @@
+---
+title: "README"
+author: "Zsuzsa Szekely"
+date: '2022 01 26 '
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Study design
+
+In our study we aimed to explore whether limited response time (RT) has an effect on congruency sequence effect (CSE), regarding its effect size and reliability. Therefore we compared the CSE results of two different versions of the Stroop task: one with limited RT-s (operating with personal RT deadline for each participant) and one without RT limitations.
+
+### Experimental group
+Participants of the experimental group completed an online, confound-minimized version of the Stroop task, in which personal RT deadline was applied.
+
+Task design:
+
+* Practice block: 24 trials
+* 4 experimental blocks, each consisting of 2 sub-sections:
+  + 28 calibration trials (for calculating personal RT deadline)
+  + 81 test trials
+
+Trial design:
+
+* Practice trials:
+  + fixation cross (1000 ms)
+  + stimulus (250 ms)
+  + blank screen (until response)
+  + feedback (1000 ms)
+  
+* Calibration trials (only congruent trials):
+  + fixation cross (1000 ms)
+  + stimulus (250 ms)
+  + blank screen (until response)
+  
+* Test trials:
+  + fixation cross (1000 ms)
+  + stimulus (250 ms)
+  + blank screen (until personal deadline, calculated in the calibration section)
+
+
+
+### Control group
+Participants of the control group also completed an online, confound-minimized version of the Stroop task, but unlike the experimental group, they had unlimited time to response.
+
+The task design was the same as for the experimental group, except calibration section:
+
+* Practice block: 24 trials
+* 4 experimental blocks: each consisting of 81 test trials
+
+Trial design:
+
+* Practice trials (same as for the experimental group):
+  + fixation cross (1000 ms)
+  + stimulus (250 ms)
+  + blank screen (until response)
+  + feedback (1000 ms)
+  
+* Test trials:
+  + fixation cross (1000 ms)
+  + stimulus (250 ms)
+  + blank screen (until response)
+
+
+You can find the code of the tasks used here: https://github.com/marton-balazs-kovacs/cse-deadline-shift
+
+

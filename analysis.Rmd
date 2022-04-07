@@ -1,0 +1,1300 @@
+---
+title: "Srtoop deadline: analysis"
+author: "Zsuzsa Szekely"
+output: 
+  html_document: default
+editor_options:
+  chunk_output_type: console
+---
+## Load packages
+
+```{r load packages, warning = FALSE, message = FALSE}
+if (!require("pacman")) install.packages("pacman")
+pacman::p_load(tidyverse, osfr, lme4, BayesFactor, DescTools, sjstats, car, broom, cowplot)
+```
+
+## Load helper functions
+
+```{r load helper functions}
+source("R/utils.R")
+```
+
+
+
+
+
+
+# DEADLINE ANALYSIS
+
+
+
+
+
+
+# Import data
+
+```{r, message = FALSE, warning = FALSE}
+dl_processed_rt <- read_tsv("data/deadline/processed/processed_data_rt.tsv")
+dl_processed_acc <- read_tsv("data/deadline/processed/processed_data_acc.tsv")
+```
+
+# Descriptive statistics of the sample size
+## Number of participants left after exclusion
+
+The number of participants should be the same for the reaction time and the the accuracy as well
+
+```{r, warning = FALSE}
+dl_processed_rt %>% 
+  distinct(participant_id) %>% 
+  count()
+
+dl_processed_acc %>% 
+  distinct(participant_id) %>% 
+  count()
+```
+
+## Number of responses after exclusion
+### For the reaction time analysis
+
+```{r, warning = FALSE}
+dl_processed_rt %>%
+  count()
+```
+
+### For the accuracy analysis
+
+```{r, warning = FALSE}
+dl_processed_acc %>%
+  count()
+```
+
+***
+
+# Checking CSE for reaction time
+## Figures of CSE for reaction time
+
+```{r, eval= FALSE}
+# prepare the cse rt plot
+dl_cse_plot_rt_data <-
+  dl_processed_rt %>%
+  # create congruency text variables
+  mutate(isPrevCongruent = case_when(isPrevCongruent ==  0L ~ "Incongruent",
+                                     isPrevCongruent ==  1L ~ "Congruent"),
+         isCongruent = case_when(congruency ==  "inc" ~ "Incongruent",
+                                 congruency ==  "con" ~ "Congruent")) %>%
+  # calculate mean rt of each participant
+  group_by(participant_id, condition) %>%
+  mutate(participant_mean_rt = mean(reaction_time, na.rm = T)) %>%
+  # calculate the mean, sd and se of rt incuding all participants' results
+  group_by(condition) %>%
+  mutate(N = n(),
+         mean_rt = mean(participant_mean_rt, na.rm = T),
+         sd_rt = sd(participant_mean_rt, na.rm = T),
+         se_rt = sd_rt / sqrt(N))
+
+# creating the plot
+dl_cse_plot_rt <- dl_cse_plot_rt_data %>% 
+  ggplot(aes(x = isPrevCongruent, y = mean_rt,
+             color = isCongruent,
+             group = isCongruent)) +
+  geom_path() +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), width=.1) +
+  scale_color_manual(values=c("#4472c4", "#F26C4F")) +
+  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_x_discrete(expand=c(1, 0)) +
+  # ggtitle(stringr::str_to_title()) +
+  xlab("Congruency of the previous trial")+
+  ylab("Mean reaction time (ms)") +
+  guides(color = guide_legend(title="Congruency of \n the current trial")) +
+  theme(#legend.position = c(0.85, 0.5),
+        axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "transparent", fill = "white"),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+```
+
+## Saving the rt CSE figure
+
+```{r, eval= FALSE}
+ggsave("figures/deadline/rt_cse_2.png", width = 10, height = 8, plot = last_plot())
+```
+
+## Hungarian figures of CSE for reaction time
+
+```{r, eval= FALSE}
+# prepare the cse rt plot
+dl_cse_plot_rt_data_hun <-
+  dl_processed_rt %>%
+  # create congruency text variables
+  mutate(isPrevCongruent = case_when(isPrevCongruent ==  0L ~ "Inkongruens",
+                                     isPrevCongruent ==  1L ~ "Kongruens"),
+         isCongruent = case_when(congruency ==  "inc" ~ "Inkongruens",
+                                 congruency ==  "con" ~ "Kongruens")) %>%
+  # calculate mean rt of each participant
+  group_by(participant_id, condition) %>%
+  mutate(participant_mean_rt = mean(reaction_time, na.rm = T)) %>%
+  # calculate the mean, sd and se of rt incuding all participants' results
+  group_by(condition) %>%
+  mutate(N = n(),
+         mean_rt = mean(participant_mean_rt, na.rm = T),
+         sd_rt = sd(participant_mean_rt, na.rm = T),
+         se_rt = sd_rt / sqrt(N))
+
+dl_cse_plot_rt_data_hun %>% 
+  distinct(participant_id, isPrevCongruent, mean_rt, se_rt) %>% 
+  count()
+
+# creating the plot
+dl_cse_plot_rt_hun <- dl_cse_plot_rt_data_hun %>% 
+  ggplot(aes(x = isPrevCongruent, y = mean_rt,
+             color = isCongruent,
+             group = isCongruent)) +
+  geom_path() +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), width=.1) +
+  scale_color_manual(values=c("#4472c4", "#F26C4F")) +
+  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_x_discrete(expand=c(1, 0)) +
+  # ggtitle(stringr::str_to_title()) +
+  xlab("Előző próba kongruenciája")+
+  ylab("Átlagos reakcióidő (ms)") +
+  guides(color = guide_legend(title="Próba \nkongruenciája")) +
+  theme(legend.position = c(0.85, 0.5),
+        axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "transparent", fill = "white"))
+```
+
+## Saving the rt CSE Hungarian figures
+
+```{r, eval= FALSE}
+ggsave("figures/deadline/rt_cse_hun.png", width = 14.4, height = 8, plot = last_plot())
+```
+
+# Checking CSE for accuracy in
+
+## Figures of CSE for accuracy
+
+```{r, eval= FALSE}
+# prepare the cse rt plot
+dl_cse_plot_acc_data <-
+  dl_processed_acc %>%
+  # create congruency variables for nice text on the figure
+  mutate(isPrevCongruent = case_when(isPrevCongruent ==  0L ~ "Incongruent",
+                                     isPrevCongruent ==  1L ~ "Congruent"),
+         isCongruent = case_when(congruency ==  "inc" ~ "Incongruent",
+                                 congruency ==  "con" ~ "Congruent")) %>%
+  # calculate conditional mean rt of each participant
+  group_by(participant_id, condition) %>%
+  mutate(participant_mean_acc = mean(correct, na.rm = T)) %>%
+  # calculate the mean, sd and se of rt incuding all participants' results
+  group_by(condition) %>%
+  mutate(N = n(),
+         mean_acc = mean(participant_mean_acc, na.rm = T),
+         sd_acc = sd(participant_mean_acc, na.rm = T),
+         se_acc = sd_acc / sqrt(N))
+
+dl_cse_plot_acc_data %>% 
+  distinct(isPrevCongruent, mean_acc, sd_acc, se_acc)
+
+# creating the plot
+dl_cse_plot_acc <- dl_cse_plot_acc_data %>% 
+  ggplot(aes(x = isPrevCongruent, y = mean_acc,
+             color = isCongruent,
+             group = isCongruent)) +
+  geom_path() +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_acc - se_acc, ymax = mean_acc + se_acc), width=.1) +
+  scale_color_manual(values = c("#4472c4", "#F26C4F")) +
+  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_x_discrete(expand = expansion(mult = c(.2, 0)) +
+  # ggtitle(stringr::str_to_title()) +
+  xlab("Congruency of the previous trial")+
+  ylab("Accuracy") +
+  guides(color = guide_legend(title="Congruency of \n the current trial")) +
+  theme(#legend.position = c(0.85, 0.5),
+        axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "transparent", fill = "white"),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+```
+
+## Saving the accuracy CSE figure
+
+```{r, eval= FALSE}
+ggsave("figures/deadline/acc_cse_2.png", width = 10, height = 8, plot = last_plot())
+```
+
+## Hungarian figures of CSE for accuracy
+
+```{r, eval= FALSE}
+# prepare the cse rt plot
+dl_cse_plot_acc_data_hun <-
+  dl_processed_acc %>%
+  # create congruency text variables
+  mutate(isPrevCongruent = case_when(isPrevCongruent ==  0L ~ "Inkongruens",
+                                     isPrevCongruent ==  1L ~ "Kongruens"),
+         isCongruent = case_when(congruency ==  "inc" ~ "Inkongruens",
+                                 congruency ==  "con" ~ "Kongruens")) %>%
+  # calculate mean rt of each participant
+  group_by(participant_id, condition) %>%
+  mutate(participant_mean_acc = mean(correct, na.rm = T)) %>%
+  # calculate the mean, sd and se of rt incuding all participants' results
+  group_by(condition) %>%
+  mutate(N = n(),
+         mean_acc = mean(participant_mean_acc, na.rm = T),
+         sd_acc = sd(participant_mean_acc, na.rm = T),
+         se_acc = sd_acc / sqrt(N))
+
+# creating the plot
+dl_cse_plot_acc <- dl_cse_plot_acc_data_hun %>% 
+  ggplot(aes(x = isPrevCongruent, y = mean_acc,
+             color = isCongruent,
+             group = isCongruent)) +
+  geom_path() +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_acc - se_acc, ymax = mean_acc + se_acc), width=.1) +
+  scale_color_manual(values=c("#4472c4", "#F26C4F")) +
+  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_x_discrete(expand=c(1, 0)) +
+  # ggtitle(stringr::str_to_title()) +
+  xlab("Előző próba kongruenciája")+
+  ylab("Pontosság (%)") +
+  guides(color = guide_legend(title="Próba \nkongruenciája")) 
+  # + theme(legend.position = c(0.85, 0.5),
+  #       axis.line = element_line(color = "black"),
+  #       panel.background = element_blank(),
+  #       legend.key = element_rect(colour = "transparent", fill = "white"))
+```
+
+## Saving the Hungarian accuracy CSE figure
+
+```{r, eval= FALSE}
+ggsave("figures/deadline/acc_cse_hun.png", width = 14.4, height = 8, plot = last_plot())
+```
+
+
+
+
+
+
+
+
+# Reaction time analyis
+## I. analysis: Testing whether the CSE was present in the task
+### Preprocessing data
+
+We are calculating mean reaction time for the analysis for each participant in each condition.
+
+```{r, warning = FALSE}
+dl_rt_conditions <- dl_processed_rt %>% 
+  group_by(participant_id, isPrevCongruent, congruency) %>% 
+  summarise(rtConditionalMean = mean(reaction_time, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+We are calculating the main congruency effect of the current (n) trial, the main congruency effect of the previous trial (n-1) and the interaction effect (CSE) between them for each participant.
+```{r}
+dl_rt_effect_data <- dl_rt_conditions %>% 
+  mutate(condition = case_when(isPrevCongruent == 0L & congruency == "inc" ~ "ii",
+                               isPrevCongruent == 0L & congruency == "con" ~ "ic",
+                               isPrevCongruent == 1L & congruency == "inc" ~ "ci",
+                               isPrevCongruent == 1L & congruency == "con" ~ "cc",
+                               TRUE ~ NA_character_)) %>%
+  select(participant_id, condition, rtConditionalMean) %>% 
+  pivot_wider(names_from = condition, values_from = rtConditionalMean) %>%
+  mutate(congruencyEffect = ((ci + ii) / 2) - ((cc + ic) / 2), # substract the mean rt of congtuent trials from the mean rt of incongtuent trials to get the rt CE
+         prevCongruencyEffect = ((ci + cc) / 2) - ((ii + ic) / 2),
+         cseEffect = (ci - cc) - (ii - ic))
+```
+
+### Running the analysis
+
+We are running a 2 × 2 repeated-measures ANOVA with mean RT as dependent variable. The two factors of the ANOVA are Previous Trial Congruency (congruent, incongruent) and Current Trial Congruency (congruent, incongruent).
+
+```{r}
+dl_rt_anova <- dl_rt_conditions %>% 
+  aov(rtConditionalMean ~ congruency * isPrevCongruent +
+        Error(participant_id / (congruency * isPrevCongruent)), data = .)
+
+# Print results
+summary(dl_rt_anova)
+```
+
+The interaction was not significant.
+
+We are calculating the partial eta square as an effect size estimate for the ANOVA.
+
+```{r}
+dl_rt_anova_eta <- dl_rt_anova %>% 
+  effectsize::eta_squared(., partial = TRUE)
+
+# Print results with names
+summary(dl_rt_anova_eta)
+```
+
+# Bayes
+
+```{r}
+dl_rt_bayes <- dl_rt_anova %>%
+                                broom::tidy() %>%
+                                select(term, statistic) %>%
+                                transmute(term = case_when(term == "congruency" ~ "mainEffectIsCongruent",
+                                                           term == "isPrevCongruent" ~ "mainEffectIsPrevCongruent",
+                                                           term == "congruency:isPrevCongruent" ~ "interactionEffect",
+                                                           term == "Residuals" ~ term),
+                                          fValue = statistic) %>%
+                                filter(!is.na(fValue))
+```
+
+We are calculating the mean effects (main congruency effect of current trial, main congruency effect of previous trial and interaction effect) for each task.
+
+```{r}
+dl_rt_raw_effect <- dl_rt_effect_data %>% 
+  summarise(mainEffectIsCongruent = mean(congruencyEffect, na.rm = T),
+            mainEffectIsPrevCongruent = mean(prevCongruencyEffect, na.rm = T),
+            interactionEffect = mean(cseEffect, na.rm = T),
+            nParticipant = n()) %>%
+  gather(key = "term", value = "rawEffect", -nParticipant)
+#We can create a table with the magnitude of the CSE across tasks here, right?
+```
+
+We are adding the calucalted F-values for each effect to the calculated mean effects.
+
+```{r}
+dl_rt_bayes <-
+  inner_join(dl_rt_bayes, dl_rt_raw_effect, by = "term")
+```
+
+Calculating the SEs.
+
+```{r}
+dl_rt_bayes <- dl_rt_bayes %>% 
+  mutate(se = rawEffect / sqrt(fValue))
+```
+
+Calculating the prior.
+
+```{r}
+dl_rt_prior <- mean(dl_rt_effect_data$congruencyEffect)/2
+```
+
+Calculating the BF for nodl accuracy CSE.
+
+```{r}
+Bf(sd = 119.388230,
+   obtained = 3.697240,
+   dfdata = 54 - 1,
+   meanoftheory = 0,
+   sdtheory = dl_rt_prior,
+   dftheory = 10^10,
+   tail = 1)
+```
+
+
+
+
+
+
+
+
+# Accuracy analysis
+## I. analysis: Testing whether the CSE was present in the different tasks
+### Preprocessing data
+
+We are calculating the accuracy for the analysis for each participant in each condition.
+
+```{r calculating mean dev acc}
+dl_acc_conditions <- dl_processed_acc %>% 
+  group_by(participant_id, isPrevCongruent, congruency) %>% 
+  summarise(accConditionalMean = mean(correct, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+We are calculating the main congruency effect of the current (n) trial, the main congruency effect of the previous trial (n-1) and the interaction effect (CSE) between them for each participant.
+
+```{r}
+dl_acc_effect_data <- dl_acc_conditions %>% 
+  mutate(condition = case_when(isPrevCongruent == 0L & congruency == "inc" ~ "ii",
+                               isPrevCongruent == 0L & congruency == "con" ~ "ic",
+                               isPrevCongruent == 1L & congruency == "inc" ~ "ci",
+                               isPrevCongruent == 1L & congruency == "con" ~ "cc",
+                               TRUE ~ NA_character_)) %>%
+  select(participant_id, condition, accConditionalMean) %>%
+  pivot_wider(names_from = condition, values_from = accConditionalMean) %>%
+  mutate(congruencyEffect = ((cc + ic) / 2) - ((ci + ii) / 2), # substract the mean acc of incongruent trials from the mean acc of congruent trials to get the acc CE
+         prevCongruencyEffect = ((ci + cc) / 2) - ((ii + ic) / 2),
+         cseEffect = (cc - ci) - (ic - ii))
+```
+
+### Running the analysis
+
+We are running a 2 × 2 repeated-measures ANOVA with accuracy as dependent variable. The two factors of the ANOVA are Previous Trial Congruency (congruent, incongruent) and Current Trial Congruency (congruent, incongruent).
+
+```{r}
+dl_acc_anova <- dl_acc_conditions %>% 
+  aov(accConditionalMean ~ congruency * isPrevCongruent +
+        Error(participant_id / (congruency * isPrevCongruent)), data = .)
+
+# Print results
+summary(dl_acc_anova)
+```
+
+All off the effects are significant.
+
+We are calculating the partial eta square as an effect size estimate for the ANOVA.
+
+```{r}
+dl_acc_anova_eta <- dl_acc_anova %>% 
+  effectsize::eta_squared(., partial = TRUE)
+
+# Print results with names
+summary(dl_acc_anova_eta)
+```
+
+Bayes
+
+```{r}
+dl_acc_bayes <- dl_acc_anova %>%
+                                broom::tidy() %>%
+                                select(term, statistic) %>%
+                                transmute(term = case_when(term == "congruency" ~ "mainEffectIsCongruent",
+                                                           term == "isPrevCongruent" ~ "mainEffectIsPrevCongruent",
+                                                           term == "congruency:isPrevCongruent" ~ "interactionEffect",
+                                                           term == "Residuals" ~ term),
+                                          fValue = statistic) %>%
+                                filter(!is.na(fValue))
+```
+
+We are calculating the mean effects (main congruency effect of current trial, main congruency effect of previous trial and interaction effect) for each task.
+
+```{r}
+dl_acc_raw_effect <- dl_acc_effect_data %>% 
+  summarise(mainEffectIsCongruent = mean(congruencyEffect, na.rm = T),
+            mainEffectIsPrevCongruent = mean(prevCongruencyEffect, na.rm = T),
+            interactionEffect = mean(cseEffect, na.rm = T),
+            nParticipant = n()) %>%
+  gather(key = "term", value = "rawEffect", -nParticipant)
+#We can create a table with the magnitude of the CSE across tasks here, right?
+```
+
+We are adding the calucalted F-values for each effect to the calculated mean effects.
+
+```{r}
+dl_acc_bayes <-
+  inner_join(dl_acc_bayes, dl_acc_raw_effect, by = "term")
+```
+
+Calculating the SEs.
+
+```{r}
+dl_acc_bayes <- dl_acc_bayes %>% 
+  mutate(se = rawEffect / sqrt(fValue))
+```
+
+Calculating the prior.
+
+```{r}
+dl_acc_prior <- mean(dl_acc_effect_data$congruencyEffect)/2
+```
+
+Calculating the BF for dl accuracy CSE.
+
+```{r}
+Bf(sd = 0.0199977,
+   obtained = 0.01615512,
+   dfdata = 45 - 1,
+   meanoftheory = 0,
+   sdtheory = dl_acc_prior,
+   dftheory = 10^10,
+   tail = 1)
+```
+
+
+
+
+
+
+
+
+Analysing personal deadline.
+
+Get the mean and sd of deadlines for each participant.
+```{r}
+personal_deadline <- dl_processed_acc %>% 
+  group_by(participant_id) %>% 
+  mutate(personal_dl_mean = mean(personalDeadline),
+         personal_dl_sd = sd(personalDeadline)) %>%
+  distinct(personal_dl_mean)
+
+# plot personal deadlines per each block
+personal_deadline_plot <-
+  personal_deadline %>%  
+  ggplot(aes(personal_dl_mean)) +
+  geom_histogram() +
+  stat_bin(binwidth = 40) +
+  xlab("Personal mean deadline (ms)") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+# save plot
+ggsave("figures/deadline/personal_deadline.png", width = 14.4, height = 8, plot = last_plot())
+```
+
+Examine how personal deadlines change during the task completion (in the 4 different blocks)
+
+```{r}
+# plot personal deadlines per each block
+block_deadline_plot_data <- dl_processed_acc %>%
+  select(participant_id, personalDeadline, blockId) %>% 
+  mutate(blockId = as.factor(blockId)) %>% 
+  distinct(participant_id, blockId, personalDeadline)
+
+cf <- coef(lm(block_deadline_plot_data$personalDeadline~as.numeric(factor(block_deadline_plot_data$blockId)), data = block_deadline_plot_data))
+
+block_deadline_plot <- block_deadline_plot_data %>% 
+  ggplot(aes(x = blockId, y = personalDeadline)) +
+  geom_violin() +
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  # geom_abline(slope = cf[2], intercept = cf[1], size = 1, color = "blue") +
+  xlab("Block number") +
+  ylab("Personal deadline (ms)") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+# save plot
+ggsave("figures/deadline/deadline_block_3.png", width = 18, height = 8, plot = last_plot())
+```
+
+Check mean deadline per blocks.
+
+```{r}
+block_deadline_plot_data %>% 
+  group_by(blockId) %>% 
+  summarise(block_rt_mean = mean(personalDeadline)) %>% 
+  View()
+```
+
+Check how mean personal CSE scores change in connection with mean personal deadlines.
+
+```{r}
+# participant_id, cseEffect, personalDeadline
+
+dl_and_rt_cse <-
+  dl_processed_rt %>% 
+  group_by(participant_id) %>% 
+  summarise(mean_deadline = mean(personalDeadline))
+
+dl_and_rt_cse <-
+  left_join(dl_and_rt_cse, dl_rt_effect_data, by = "participant_id") %>%
+  select(participant_id, mean_deadline, cseEffect)
+
+dl_and_rt_cse_plot <-
+  dl_and_rt_cse %>% 
+  ggplot(aes(x = mean_deadline, y = cseEffect)) +
+  geom_point()
+```
+
+Check how personal CSE scores change in connection with personal deadlines per blocks.
+
+```{r}
+# participant_id, cseEffect, personalDeadline, blockId
+
+dl_and_rt_cse_block <-
+  dl_processed_rt %>% 
+  distinct(participant_id, blockId, personalDeadline)
+  
+
+dl_and_rt_cse_block <-
+  left_join(dl_and_rt_cse_block, dl_rt_effect_data, by = "participant_id") %>%
+  select(participant_id, blockId, personalDeadline, cseEffect)
+
+dl_and_rt_cse_block_plot <-
+  dl_and_rt_cse_block %>% 
+  filter(blockId == 1) %>% 
+  ggplot(aes(x = personalDeadline, y = cseEffect)) +
+  geom_point() +
+  scale_x_continuous(limits = c(350, 1650)) +
+  scale_y_continuous(limits = c(-110, 120))
+
+dl_and_rt_cse_block_plot
+
+dl_and_rt_cse_block_plot <-
+  dl_and_rt_cse_block %>% 
+  filter(blockId == 2) %>% 
+  ggplot(aes(x = personalDeadline, y = cseEffect)) +
+  geom_point() +
+  scale_x_continuous(limits = c(350, 1650)) +
+  scale_y_continuous(limits = c(-110, 120))
+
+dl_and_rt_cse_block_plot
+
+dl_and_rt_cse_block_plot <-
+  dl_and_rt_cse_block %>% 
+  filter(blockId == 3) %>% 
+  ggplot(aes(x = personalDeadline, y = cseEffect)) +
+  geom_point() +
+  scale_x_continuous(limits = c(350, 1650)) +
+  scale_y_continuous(limits = c(-110, 120))
+
+dl_and_rt_cse_block_plot
+
+dl_and_rt_cse_block_plot <-
+  dl_and_rt_cse_block %>% 
+  filter(blockId == 4) %>% 
+  ggplot(aes(x = personalDeadline, y = cseEffect)) +
+  geom_point() +
+  scale_x_continuous(limits = c(350, 1650)) +
+  scale_y_continuous(limits = c(-110, 120))
+
+dl_and_rt_cse_block_plot
+```
+
+Check how mean CSE scores change in connection with mean deadlines per blocks.
+
+```{r}
+# participant_id, cseEffect, personalDeadline, blockId
+
+dl_and_rt_cse_block <-
+  dl_processed_rt %>% 
+  distinct(participant_id, blockId, personalDeadline)
+  
+
+dl_and_rt_cse_block <-
+  left_join(dl_and_rt_cse_block, dl_rt_effect_data, by = "participant_id") %>%
+  select(participant_id, blockId, personalDeadline, cseEffect)
+
+dl_and_rt_cse_block %>% 
+  group_by(blockId) %>% 
+  summarise(mead_deadline = mean(personalDeadline),
+            mean_cse = mean(cseEffect))
+
+dl_and_rt_cse_block_plot <-
+  dl_and_rt_cse_block %>% 
+  filter(blockId == 1) %>% 
+  ggplot(aes(x = personalDeadline, y = cseEffect)) +
+  geom_point() +
+  scale_x_continuous(limits = c(350, 1650)) +
+  scale_y_continuous(limits = c(-110, 120))
+
+dl_and_rt_cse_block_plot
+
+dl_and_rt_cse_block_plot <-
+  dl_and_rt_cse_block %>% 
+  filter(blockId == 2) %>% 
+  ggplot(aes(x = personalDeadline, y = cseEffect)) +
+  geom_point() +
+  scale_x_continuous(limits = c(350, 1650)) +
+  scale_y_continuous(limits = c(-110, 120))
+
+dl_and_rt_cse_block_plot
+
+dl_and_rt_cse_block_plot <-
+  dl_and_rt_cse_block %>% 
+  filter(blockId == 3) %>% 
+  ggplot(aes(x = personalDeadline, y = cseEffect)) +
+  geom_point() +
+  scale_x_continuous(limits = c(350, 1650)) +
+  scale_y_continuous(limits = c(-110, 120))
+
+dl_and_rt_cse_block_plot
+
+dl_and_rt_cse_block_plot <-
+  dl_and_rt_cse_block %>% 
+  filter(blockId == 4) %>% 
+  ggplot(aes(x = personalDeadline, y = cseEffect)) +
+  geom_point() +
+  scale_x_continuous(limits = c(350, 1650)) +
+  scale_y_continuous(limits = c(-110, 120))
+
+dl_and_rt_cse_block_plot
+```
+
+
+
+
+
+
+# NODEADLINE ANALYSIS
+
+
+
+
+
+
+
+
+# Import data
+
+```{r, message = FALSE, warning = FALSE}
+nodl_processed_rt <- read_tsv("data/nodeadline/processed/processed_data_rt.tsv")
+nodl_processed_acc <- read_tsv("data/nodeadline/processed/processed_data_acc.tsv")
+```
+
+# Descriptive statistics of the sample size
+## Number of participants left after exclusion
+
+The number of participants should be the same for the reaction time and the the accuracy as well
+
+```{r, warning = FALSE}
+nodl_processed_rt %>% 
+  distinct(participant_id) %>% 
+  count()
+
+nodl_processed_acc %>% 
+  distinct(participant_id) %>% 
+  count()
+```
+
+## Number of responses after exclusion
+### For the reaction time analysis
+
+```{r, warning = FALSE}
+nodl_processed_rt %>%
+  count()
+```
+
+### For the accuracy analysis
+
+```{r, warning = FALSE}
+nodl_processed_acc %>%
+  count()
+```
+
+***
+
+# Checking CSE for reaction time
+## Figures of CSE for reaction time
+
+```{r, eval= FALSE}
+# prepare the cse rt plot
+nodl_cse_plot_rt_data <-
+  nodl_processed_rt %>%
+  # create congruency text variables
+  mutate(isPrevCongruent = case_when(isPrevCongruent ==  0L ~ "Incongruent",
+                                     isPrevCongruent ==  1L ~ "Congruent"),
+         isCongruent = case_when(congruency ==  "inc" ~ "Incongruent",
+                                 congruency ==  "con" ~ "Congruent")) %>%
+  # calculate mean rt of each participant
+  group_by(participant_id, condition) %>%
+  mutate(participant_mean_rt = mean(duration, na.rm = T)) %>%
+  # calculate the mean, sd and se of rt incuding all participants' results
+  group_by(condition) %>%
+  mutate(N = n(),
+         mean_rt = mean(participant_mean_rt, na.rm = T),
+         sd_rt = sd(participant_mean_rt, na.rm = T),
+         se_rt = sd_rt / sqrt(N))
+
+# creating the plot
+nodl_cse_plot_rt <- nodl_cse_plot_rt_data %>% 
+  ggplot(aes(x = isPrevCongruent, y = mean_rt,
+             color = isCongruent,
+             group = isCongruent)) +
+  geom_path() +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), width=.1) +
+  scale_color_manual(values=c("#4472c4", "#F26C4F")) +
+  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_x_discrete(expand=c(1, 0)) +
+  # ggtitle(stringr::str_to_title()) +
+  xlab("Congruency of the previous trial")+
+  ylab("Mean reaction time (ms)") +
+  guides(color = guide_legend(title="Congruency of \n the current trial")) +
+  theme(#legend.position = c(0.85, 0.5),
+        axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "transparent", fill = "white"),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+```
+
+## Saving the rt CSE figure
+
+```{r, eval= FALSE}
+ggsave("figures/nodeadline/rt_cse_2.png", width = 10, height = 8, plot = last_plot())
+```
+
+## Hungarian figures of CSE for reaction time
+
+```{r, eval= FALSE}
+# prepare the cse rt plot
+nodl_cse_plot_rt_data_hun <-
+  nodl_processed_rt %>%
+  # create congruency text variables
+  mutate(isPrevCongruent = case_when(isPrevCongruent ==  0L ~ "Inkongruens",
+                                     isPrevCongruent ==  1L ~ "Kongruens"),
+         isCongruent = case_when(congruency ==  "inc" ~ "Inkongruens",
+                                 congruency ==  "con" ~ "Kongruens")) %>%
+  # calculate mean rt of each participant
+  group_by(participant_id, condition) %>%
+  mutate(participant_mean_rt = mean(duration, na.rm = T)) %>%
+  # calculate the mean, sd and se of rt incuding all participants' results
+  group_by(condition) %>%
+  mutate(N = n(),
+         mean_rt = mean(participant_mean_rt, na.rm = T),
+         sd_rt = sd(participant_mean_rt, na.rm = T),
+         se_rt = sd_rt / sqrt(N))
+
+# creating the plot
+nodl_cse_plot_rt_hun <- nodl_cse_plot_rt_data_hun %>% 
+  ggplot(aes(x = isPrevCongruent, y = mean_rt,
+             color = isCongruent,
+             group = isCongruent)) +
+  geom_path() +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), width=.1) +
+  scale_color_manual(values=c("#4472c4", "#F26C4F")) +
+  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_x_discrete(expand=c(1, 0)) +
+  # ggtitle(stringr::str_to_title()) +
+  xlab("Előző próba kongruenciája")+
+  ylab("Átlagos reakcióidő (ms)") +
+  guides(color = guide_legend(title="Próba \nkongruenciája")) 
+  # + theme(legend.position = c(0.85, 0.5),
+  #       axis.line = element_line(color = "black"),
+  #       panel.background = element_blank(),
+  #       legend.key = element_rect(colour = "transparent", fill = "white"))
+```
+
+## Saving the rt CSE Hungarian figures
+
+```{r, eval= FALSE}
+ggsave("figures/nodeadline/rt_cse_hun.png", width = 14.4, height = 8, plot = last_plot())
+```
+
+# Checking CSE for accuracy in
+## Figures of CSE for accuracy
+
+```{r, eval= FALSE}
+# prepare the cse rt plot
+nodl_cse_plot_acc_data <-
+  nodl_processed_acc %>%
+  # create congruency text variables
+  mutate(isPrevCongruent = case_when(isPrevCongruent ==  0L ~ "Incongruent",
+                                     isPrevCongruent ==  1L ~ "Congruent"),
+         isCongruent = case_when(congruency ==  "inc" ~ "Incongruent",
+                                 congruency ==  "con" ~ "Congruent")) %>%
+  # calculate mean rt of each participant
+  group_by(participant_id, condition) %>%
+  mutate(participant_mean_acc = mean(correct, na.rm = T)) %>%
+  # calculate the mean, sd and se of rt incuding all participants' results
+  group_by(condition) %>%
+  mutate(N = n(),
+         mean_acc = mean(participant_mean_acc, na.rm = T),
+         sd_acc = sd(participant_mean_acc, na.rm = T),
+         se_acc = sd_acc / sqrt(N))
+
+nodl_cse_plot_acc_data %>% 
+  distinct(isPrevCongruent, mean_acc, sd_acc, se_acc) %>% 
+  View()
+
+# creating the plot
+nodl_cse_plot_acc <- nodl_cse_plot_acc_data %>% 
+  ggplot(aes(x = isPrevCongruent, y = mean_acc,
+             color = isCongruent,
+             group = isCongruent)) +
+  geom_path() +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_acc - se_acc, ymax = mean_acc + se_acc), width=.1) +
+  scale_color_manual(values=c("#4472c4", "#F26C4F")) +
+  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_x_discrete(expand=c(1, 0)) +
+  # ggtitle(stringr::str_to_title()) +
+  xlab("Congruency of the previous trial")+
+  ylab("Accuracy (%)") +
+  guides(color = guide_legend(title="Congruency of \n the current trial")) +
+  theme(#legend.position = c(0.85, 0.5),
+        axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "transparent", fill = "white"),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+```
+
+## Saving the accuracy CSE figure
+
+```{r, eval= FALSE}
+ggsave("figures/nodeadline/acc_cse_2.png", width = 10, height = 8, plot = last_plot())
+```
+
+## Hungarian figures of CSE for accuracy
+
+```{r, eval= FALSE}
+# prepare the cse rt plot
+nodl_cse_plot_acc_data_hun <-
+  nodl_processed_acc %>%
+  # create congruency text variables
+  mutate(isPrevCongruent = case_when(isPrevCongruent ==  0L ~ "Inkongruens",
+                                     isPrevCongruent ==  1L ~ "Kongruens"),
+         isCongruent = case_when(congruency ==  "inc" ~ "Inkongruens",
+                                 congruency ==  "con" ~ "Kongruens")) %>%
+  # calculate mean rt of each participant
+  group_by(participant_id, condition) %>%
+  mutate(participant_mean_acc = mean(correct, na.rm = T)) %>%
+  # calculate the mean, sd and se of rt incuding all participants' results
+  group_by(condition) %>%
+  mutate(N = n(),
+         mean_acc = mean(participant_mean_acc, na.rm = T),
+         sd_acc = sd(participant_mean_acc, na.rm = T),
+         se_acc = sd_acc / sqrt(N))
+
+# creating the plot
+nodl_cse_plot_acc <- nodl_cse_plot_acc_data_hun %>% 
+  ggplot(aes(x = isPrevCongruent, y = mean_acc,
+             color = isCongruent,
+             group = isCongruent)) +
+  geom_path() +
+  geom_point(size = 2) +
+  geom_errorbar(aes(ymin = mean_acc - se_acc, ymax = mean_acc + se_acc), width=.1) +
+  scale_color_manual(values=c("#4472c4", "#F26C4F")) +
+  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_x_discrete(expand=c(1, 0)) +
+  # ggtitle(stringr::str_to_title()) +
+  xlab("Előző próba kongruenciája")+
+  ylab("Pontosság (%)") +
+  guides(color = guide_legend(title="Próba \nkongruenciája")) 
+  # + theme(legend.position = c(0.85, 0.5),
+  #       axis.line = element_line(color = "black"),
+  #       panel.background = element_blank(),
+  #       legend.key = element_rect(colour = "transparent", fill = "white"))
+```
+
+## Saving the Hungarian accuracy CSE figure
+
+```{r, eval= FALSE}
+ggsave("figures/nodeadline/acc_cse_hun.png", width = 14.4, height = 8, plot = last_plot())
+```
+
+
+
+
+
+
+
+
+# Reaction time analyis
+## I. analysis: Testing whether the CSE was present in the task
+### Preprocessing data
+
+We are calculating mean reaction time for the analysis for each participant in each condition.
+
+```{r, warning = FALSE}
+nodl_rt_conditions <- nodl_processed_rt %>% 
+  group_by(participant_id, isPrevCongruent, congruency) %>% 
+  summarise(rtConditionalMean = mean(duration)) %>%
+  ungroup()
+```
+
+We are calculating the main congruency effect of the current (n) trial, the main congruency effect of the previous trial (n-1) and the interaction effect (CSE) between them for each participant.
+```{r}
+nodl_rt_effect_data <- nodl_rt_conditions %>% 
+  mutate(condition = case_when(isPrevCongruent == 0L & congruency == "inc" ~ "ii",
+                               isPrevCongruent == 0L & congruency == "con" ~ "ic",
+                               isPrevCongruent == 1L & congruency == "inc" ~ "ci",
+                               isPrevCongruent == 1L & congruency == "con" ~ "cc",
+                               TRUE ~ NA_character_)) %>%
+  select(participant_id, condition, rtConditionalMean) %>%
+  pivot_wider(names_from = condition, values_from = rtConditionalMean) %>%
+  mutate(congruencyEffect = ((ci + ii) / 2) - ((cc + ic) / 2), # substract the mean rt of congtuent trials from the mean rt of incongtuent trials to get the rt CE
+         prevCongruencyEffect = ((ci + cc) / 2) - ((ii + ic) / 2),
+         cseEffect = (ci - cc) - (ii - ic))
+```
+
+### Running the analysis
+
+We are running a 2 × 2 repeated-measures ANOVA with mean RT as dependent variable. The two factors of the ANOVA are Previous Trial Congruency (congruent, incongruent) and Current Trial Congruency (congruent, incongruent).
+
+```{r}
+nodl_rt_anova <- nodl_rt_conditions %>% 
+  aov(rtConditionalMean ~ congruency * isPrevCongruent +
+        Error(participant_id / (congruency * isPrevCongruent)), data = .)
+
+# Print results
+summary(nodl_rt_anova)
+```
+
+The interaction was not significant.
+
+We are calculating the partial eta square as an effect size estimate for the ANOVA.
+
+```{r}
+nodl_rt_anova_eta <- nodl_rt_anova %>% 
+  effectsize::eta_squared(., partial = TRUE)
+
+# Print results with names
+summary(nodl_rt_anova_eta)
+```
+
+Bayes
+
+```{r}
+nodl_rt_bayes <- nodl_rt_anova %>%
+                                broom::tidy() %>%
+                                select(term, statistic) %>%
+                                transmute(term = case_when(term == "congruency" ~ "mainEffectIsCongruent",
+                                                           term == "isPrevCongruent" ~ "mainEffectIsPrevCongruent",
+                                                           term == "congruency:isPrevCongruent" ~ "interactionEffect",
+                                                           term == "Residuals" ~ term),
+                                          fValue = statistic) %>%
+                                filter(!is.na(fValue))
+```
+
+We are calculating the mean effects (main congruency effect of current trial, main congruency effect of previous trial and interaction effect) for each task.
+
+```{r}
+nodl_rt_raw_effect <- nodl_rt_effect_data %>% 
+  summarise(mainEffectIsCongruent = mean(congruencyEffect, na.rm = T),
+            mainEffectIsPrevCongruent = mean(prevCongruencyEffect, na.rm = T),
+            interactionEffect = mean(cseEffect, na.rm = T),
+            nParticipant = n()) %>%
+  gather(key = "term", value = "rawEffect", -nParticipant)
+#We can create a table with the magnitude of the CSE across tasks here, right?
+```
+
+We are adding the calucalted F-values for each effect to the calculated mean effects.
+
+```{r}
+nodl_rt_bayes <-
+  inner_join(nodl_rt_bayes, nodl_rt_raw_effect, by = "term")
+```
+
+Calculating the SEs.
+
+```{r}
+nodl_rt_bayes <- nodl_rt_bayes %>% 
+  mutate(se = rawEffect / sqrt(fValue))
+```
+
+Calculating the prior.
+
+```{r}
+nodl_rt_prior <- mean(nodl_rt_effect_data$congruencyEffect)/2
+```
+
+Calculating the BF for nodl accuracy CSE.
+
+```{r}
+Bf(sd = 68.06624,
+   obtained = 9.068014,
+   dfdata = 63 - 1,
+   meanoftheory = 0,
+   sdtheory = nodl_rt_prior,
+   dftheory = 10^10,
+   tail = 1)
+```
+
+As the BF falls between 1/3 and 3, it means that it's inconclusive.
+
+***
+
+
+
+
+# Accuracy analysis
+## I. analysis: Testing whether the CSE was present in the different tasks
+### Preprocessing data
+
+We are calculating the accuracy for the analysis for each participant in each condition.
+
+```{r calculating mean dev acc}
+nodl_acc_conditions <- nodl_processed_acc %>% 
+  group_by(participant_id, isPrevCongruent, congruency) %>% 
+  summarise(accConditionalMean = mean(correct, na.rm = TRUE)) %>%
+  ungroup()
+```
+
+We are calculating the main congruency effect of the current (n) trial, the main congruency effect of the previous trial (n-1) and the interaction effect (CSE) between them for each participant.
+
+```{r}
+nodl_acc_effect_data <- nodl_acc_conditions %>% 
+  mutate(condition = case_when(isPrevCongruent == 0L & congruency == "inc" ~ "ii",
+                               isPrevCongruent == 0L & congruency == "con" ~ "ic",
+                               isPrevCongruent == 1L & congruency == "inc" ~ "ci",
+                               isPrevCongruent == 1L & congruency == "con" ~ "cc",
+                               TRUE ~ NA_character_)) %>%
+  select(participant_id, condition, accConditionalMean) %>%
+  pivot_wider(names_from = condition, values_from = accConditionalMean) %>%
+  mutate(congruencyEffect = ((cc + ic) / 2) - ((ci + ii) / 2), # substract the mean acc of incongruent trials from the mean acc of congruent trials to get the acc CE
+         prevCongruencyEffect = ((ci + cc) / 2) - ((ii + ic) / 2),
+         cseEffect = (cc - ci) - (ic - ii))
+```
+
+### Running the analysis
+
+We are running a 2 × 2 repeated-measures ANOVA with accuracy as dependent variable. The two factors of the ANOVA are Previous Trial Congruency (congruent, incongruent) and Current Trial Congruency (congruent, incongruent).
+
+```{r}
+nodl_acc_anova <- nodl_acc_conditions %>% 
+  aov(accConditionalMean ~ congruency * isPrevCongruent +
+        Error(participant_id / (congruency * isPrevCongruent)), data = .)
+
+# Print results
+summary(nodl_acc_anova)
+```
+
+All off the effects are significant.
+
+We are calculating the partial eta square as an effect size estimate for the ANOVA.
+
+```{r}
+nodl_acc_anova_eta <- dl_acc_anova %>% 
+  effectsize::eta_squared(., partial = TRUE)
+
+# Print results with names
+summary(nodl_acc_anova_eta)
+```
+
+
+Bayes
+
+```{r}
+nodl_bayes <- nodl_acc_anova %>%
+                                broom::tidy() %>%
+                                select(term, statistic) %>%
+                                transmute(term = case_when(term == "congruency" ~ "mainEffectIsCongruent",
+                                                           term == "isPrevCongruent" ~ "mainEffectIsPrevCongruent",
+                                                           term == "congruency:isPrevCongruent" ~ "interactionEffect",
+                                                           term == "Residuals" ~ term),
+                                          fValue = statistic) %>%
+                                filter(!is.na(fValue))
+```
+
+We are calculating the mean effects (main congruency effect of current trial, main congruency effect of previous trial and interaction effect) for each task.
+
+```{r}
+nodl_acc_raw_effect <- nodl_acc_effect_data %>% 
+  summarise(mainEffectIsCongruent = mean(congruencyEffect, na.rm = T),
+            mainEffectIsPrevCongruent = mean(prevCongruencyEffect, na.rm = T),
+            interactionEffect = mean(cseEffect, na.rm = T),
+            nParticipant = n()) %>%
+  gather(key = "term", value = "rawEffect", -nParticipant)
+#We can create a table with the magnitude of the CSE across tasks here, right?
+```
+
+We are adding the calucalted F-values for each effect to the calculated mean effects.
+
+```{r}
+nodl_acc_bayes <-
+  inner_join(nodl_bayes, nodl_acc_raw_effect, by = "term")
+```
+
+Calculating the SEs.
+
+```{r}
+nodl_acc_bayes <- nodl_acc_bayes %>% 
+  mutate(se = rawEffect / sqrt(fValue))
+```
+
+Calculating the prior.
+
+```{r}
+nodl_acc_prior <- mean(nodl_acc_effect_data$congruencyEffect)/2
+```
+
+Calculating the BF for nodl accuracy CSE.
+
+```{r}
+Bf(sd = 0.01771895,
+   obtained = 0.008469378,
+   dfdata = 63 - 1,
+   meanoftheory = 0,
+   sdtheory = nodl_acc_prior,
+   dftheory = 10^10,
+   tail = 1)
+```
+
+
+
+
+
+
+# COMPARING DEADLINE AND NO-DEADLINE DATA
+We would like to know if there is significant difference 
+* 1. between the CSE scores of dl and no-dl data.
+* 2. in the variance of accuracy between the dl and no-dl condition.
+
+## Comparing CSE scores
+
+As we only had significant CSE in case of accuracy (both in the experimental and the control group), we analyze only these data.
+
+Create df containing dl and nodl CSE data as well.
+```{r}
+# acc data
+cse_acc_control <- dl_acc_effect_data %>%
+  mutate(group = "control")
+
+cse_acc_exp <- nodl_acc_effect_data %>% 
+  mutate(group = "experimental")
+
+cse_acc_all <-
+  bind_rows(cse_acc_control, cse_acc_exp)
+
+# rt data
+cse_rt_control <- dl_rt_effect_data %>%
+  mutate(group = "control")
+
+cse_rt_exp <- nodl_rt_effect_data %>% 
+  mutate(group = "experimental")
+
+cse_rt_all <-
+  bind_rows(cse_rt_control, cse_rt_exp)
+```
+
+Check the distribution of personal CSE effect sizes in the experimental and control group.
+```{r}
+# in case of accuracy
+cse_acc_all %>% 
+  distinct(participant_id, cseEffect)
+
+cse_acc_plot <-
+  cse_acc_all %>% 
+  ggplot(aes(x = group, y = cseEffect)) +
+  geom_violin() +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  scale_x_discrete(limits = c("experimental", "control" )) +
+  ylab("Personal CSE (acc) effect size")+
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+cse_acc_plot
+
+ggsave("figures/cse_acc_effect_size_2.png", width = 9, height = 8, plot = last_plot())
+
+# in case of rt
+cse_rt_all %>% 
+  distinct(participant_id, cseEffect)
+
+cse_rt_plot <-
+  cse_rt_all %>% 
+  ggplot(aes(x = group, y = cseEffect)) +
+  geom_violin() +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  scale_x_discrete(limits = c("experimental", "control" )) +
+  ylab("Personal CSE (rt) effect size")+
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+cse_rt_plot
+
+ggsave("figures/cse_rt_effect_size_2.png", width = 9, height = 8, plot = last_plot())
+```
+
