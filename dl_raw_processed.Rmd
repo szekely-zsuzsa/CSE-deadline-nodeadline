@@ -523,7 +523,7 @@ testAccAnalysis %>%
 testAccAnalysis %>% 
   group_by(participant_id) %>% 
   ggplot(aes(x = prop)) +
-  geom_bar() +
+  geom_histogram(binwidth = 0.5) +
   scale_y_continuous(limits = c(0, 1500)) +
   scale_x_continuous(limits = c(70, 100))
 ```
@@ -563,7 +563,16 @@ testRtAnalysis %>%
   nrow() # get the number of these participants
 ```
 
+## Remove unused columns
 
+```{r}
+# we can remove more, but I leave it like this for now
+testRtAnalysis = testRtAnalysis %>% 
+  select(-sender_id,-sender_type,-sender,-timestamp, -testTrialset, -calibrationTrialset)
+
+testAccAnalysis = testRtAnalysis %>% 
+  select(-sender_id,-sender_type,-sender,-timestamp, -testTrialset, -calibrationTrialset)
+```
 
 
 

@@ -10,7 +10,7 @@ editor_options:
 
 ```{r load packages, warning = FALSE, message = FALSE}
 if (!require("pacman")) install.packages("pacman")
-pacman::p_load(tidyverse, osfr, lme4, BayesFactor, DescTools, sjstats, car, broom, cowplot)
+pacman::p_load(tidyverse, osfr, lme4, BayesFactor, DescTools, sjstats, car, broom, cowplot, lmerTest)
 ```
 
 ## Load helper functions
@@ -99,6 +99,7 @@ dl_cse_plot_rt <- dl_cse_plot_rt_data %>%
              group = isCongruent)) +
   geom_path() +
   geom_point(size = 2) +
+  ylim(530,630)+
   geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), width=.1) +
   scale_color_manual(values=c("#4472c4", "#F26C4F")) +
   # scale_y_continuous(limits = c(500, 600)) +
@@ -114,6 +115,8 @@ dl_cse_plot_rt <- dl_cse_plot_rt_data %>%
         text = element_text(size = 20),
         axis.title.y = element_text(margin = margin(r = 20)),
         axis.title.x = element_text(margin = margin(t = 20)))
+
+dl_cse_plot_rt
 ```
 
 ## Saving the rt CSE figure
@@ -222,6 +225,8 @@ dl_cse_plot_acc <- dl_cse_plot_acc_data %>%
         text = element_text(size = 20),
         axis.title.y = element_text(margin = margin(r = 20)),
         axis.title.x = element_text(margin = margin(t = 20)))
+
+dl_cse_plot_acc
 ```
 
 ## Saving the accuracy CSE figure
@@ -396,6 +401,21 @@ Bf(sd = 119.388230,
    tail = 1)
 ```
 
+# Rt analysis with multilevel linear regression
+
+```{r}
+cse_model = lmer(reaction_time ~ congruency*isPrevCongruent + (1|participant_id), data = dl_processed_rt)
+cse_model_summary = summary(cse_model)
+
+Bf(sd = cse_model_summary$coefficients[8],
+   obtained = cse_model_summary$coefficients[4],
+   dfdata = cse_model_summary$coefficients[12],
+   meanoftheory = 0,
+   sdtheory = 20,
+   dftheory = 10^10,
+   tail = 1)
+
+```
 
 
 
@@ -818,6 +838,8 @@ nodl_cse_plot_rt <- nodl_cse_plot_rt_data %>%
         text = element_text(size = 20),
         axis.title.y = element_text(margin = margin(r = 20)),
         axis.title.x = element_text(margin = margin(t = 20)))
+
+nodl_cse_plot_rt
 ```
 
 ## Saving the rt CSE figure
@@ -897,8 +919,7 @@ nodl_cse_plot_acc_data <-
          se_acc = sd_acc / sqrt(N))
 
 nodl_cse_plot_acc_data %>% 
-  distinct(isPrevCongruent, mean_acc, sd_acc, se_acc) %>% 
-  View()
+  distinct(isPrevCongruent, mean_acc, sd_acc, se_acc) 
 
 # creating the plot
 nodl_cse_plot_acc <- nodl_cse_plot_acc_data %>% 
@@ -907,6 +928,7 @@ nodl_cse_plot_acc <- nodl_cse_plot_acc_data %>%
              group = isCongruent)) +
   geom_path() +
   geom_point(size = 2) +
+  ylim(0.9,1) +
   geom_errorbar(aes(ymin = mean_acc - se_acc, ymax = mean_acc + se_acc), width=.1) +
   scale_color_manual(values=c("#4472c4", "#F26C4F")) +
   # scale_y_continuous(limits = c(500, 600)) +
@@ -922,6 +944,8 @@ nodl_cse_plot_acc <- nodl_cse_plot_acc_data %>%
         text = element_text(size = 20),
         axis.title.y = element_text(margin = margin(r = 20)),
         axis.title.x = element_text(margin = margin(t = 20)))
+
+nodl_cse_plot_acc
 ```
 
 ## Saving the accuracy CSE figure
@@ -1100,6 +1124,21 @@ As the BF falls between 1/3 and 3, it means that it's inconclusive.
 
 ***
 
+# Rt analysis with multilevel linear regression
+
+```{r}
+cse_model_nodl = lmer(duration ~ congruency*isPrevCongruent + (1|participant_id), data = nodl_processed_rt)
+cse_model_summary = summary(cse_model_nodl)
+
+Bf(sd = cse_model_summary$coefficients[8],
+   obtained = cse_model_summary$coefficients[4],
+   dfdata = cse_model_summary$coefficients[12],
+   meanoftheory = 0,
+   sdtheory = 150,
+   dftheory = 10^10,
+   tail = 1)
+
+```
 
 
 
