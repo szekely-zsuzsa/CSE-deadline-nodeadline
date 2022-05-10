@@ -542,6 +542,129 @@ Bf(sd = 0.0199977,
 
 
 
+Strategy analysis
+
+# timeout trials allow us to infer the strategy of the participants, whether they tended to respond quickly or accurately
+
+create df for strategy analysis
+```{r}
+dl_strategy <- dl_processed_acc %>% 
+  select(participant_id, blockId, correct, reaction_time, congruency, personalDeadline) %>%
+  filter(correct == FALSE) %>%
+  mutate(timeout = is.na(reaction_time)) 
+```
+
+examining the proportion of timeout trials within erronous trials
+```{r}
+# count timeout trials for each participant, per each block
+dl_timeout <- dl_strategy %>% 
+  group_by(participant_id, blockId, timeout) %>% 
+  summarise(n = n()) %>%
+  
+  # calculate proportion of timeout trials
+  mutate(N = sum(n),
+         prop = n / N * 100) %>% 
+  
+  # keep only timeout trials in df for timeout analysis
+  filter(timeout == TRUE) %>% 
+  
+  # calculate mean of timeout prop for each participant
+  group_by(participant_id) %>% 
+  mutate(prop_mean = mean(prop)) %>% 
+  ungroup()
+```
+
+plot timeout data
+```{r}
+dl_timeout_plot <-
+  dl_timeout %>% 
+  distinct(participant_id, prop_mean) %>% 
+  ggplot(aes(x = prop_mean)) +
+  geom_histogram() +
+  stat_bin(binwidth = 10) +
+  xlab("Proportion of timeout trials (%)") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+# save plot
+ggsave("figures/deadline/timeout_prop.png", width = 14.4, height = 8, plot = last_plot())
+
+dl_timeout_blocks_plot <-
+  dl_timeout %>%
+  group_by(blockId) %>%
+  ggplot(aes(x = blockId, y = prop)) +
+  geom_violin() +
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  xlab("Block number") +
+  ylab("Proportion of timeout trials (%)") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+# save plot
+ggsave("figures/deadline/timeout_blocks.png", width = 18, height = 8, plot = last_plot())
+```
+
+
+# another "strategy" could be panic responding, therefore we analyse erronous (not timeout) congruent trials
+```{r}
+# the proportion of incorrectly answered congruent trials within all erronous (including timeout) congruent trials
+dl_panic <- dl_strategy %>% 
+  filter(congruency == "con") %>% 
+  group_by(participant_id, blockId, timeout, personalDeadline) %>% 
+  summarise(n = n()) %>%
+  group_by(participant_id, blockId) %>% 
+  mutate(N = sum(n),
+         prop = n / N * 100) %>% 
+  filter(timeout == FALSE)
+```
+
+
+plot panic data
+```{r}
+dl_panic_blocks_plot <- dl_panic %>%
+  group_by(blockId) %>% 
+  ggplot(aes(x = blockId, y = prop)) +
+  geom_violin() +
+  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  xlab("Block number") +
+  ylab("Proportion of incorrect congruent trials (%)") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+dl_panic_dl <- dl_strategy %>% 
+  group_by(blockId) %>% 
+  filter(congruency == "con", timeout == FALSE) %>% 
+    ggplot(aes(x = personalDeadline)) +
+  geom_histogram() +
+  stat_bin(binwidth = 50) +
+  xlab("Personal deadline (ms)") +
+  ylab("Number of incorrectly answered congruent trials")
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+  
+# save plot
+ggsave("figures/deadline/panic_dl.png", width = 18, height = 8, plot = last_plot())
+```
+
+
+
+
+
+
+
+
 Analysing personal deadline.
 
 Get the mean and sd of deadlines for each participant.
@@ -1272,21 +1395,21 @@ As we only had significant CSE in case of accuracy (both in the experimental and
 Create df containing dl and nodl CSE data as well.
 ```{r}
 # acc data
-cse_acc_control <- dl_acc_effect_data %>%
-  mutate(group = "control")
-
-cse_acc_exp <- nodl_acc_effect_data %>% 
+cse_acc_exp <- dl_acc_effect_data %>%
   mutate(group = "experimental")
+
+cse_acc_control <- nodl_acc_effect_data %>% 
+  mutate(group = "control")
 
 cse_acc_all <-
   bind_rows(cse_acc_control, cse_acc_exp)
 
 # rt data
-cse_rt_control <- dl_rt_effect_data %>%
-  mutate(group = "control")
-
-cse_rt_exp <- nodl_rt_effect_data %>% 
+cse_rt_exp <- dl_rt_effect_data %>%
   mutate(group = "experimental")
+
+cse_rt_control <- nodl_rt_effect_data %>% 
+  mutate(group = "control")
 
 cse_rt_all <-
   bind_rows(cse_rt_control, cse_rt_exp)
@@ -1335,5 +1458,85 @@ cse_rt_plot <-
 cse_rt_plot
 
 ggsave("figures/cse_rt_effect_size_2.png", width = 9, height = 8, plot = last_plot())
+```
+
+## Comparing personal mean reaction times in the experimental and control groups
+
+```{r}
+rt_sd_data_exp <- dl_processed_rt %>% 
+  select(participant_id, reaction_time) %>% 
+  group_by(participant_id) %>% 
+  summarise(mean_rt = mean(reaction_time),
+         sd_rt = sd(reaction_time)) %>% 
+  mutate(group = "experimental")
+
+rt_sd_data_control <- nodl_processed_rt %>% 
+  select(participant_id, duration) %>% 
+  group_by(participant_id) %>% 
+  summarise(mean_rt = mean(duration),
+         sd_rt = sd(duration)) %>% 
+  mutate(group = "control")
+
+rt_sd_all <-
+  bind_rows(rt_sd_data_exp, rt_sd_data_control)
+
+rt_sd_all %>% 
+  group_by(group) %>% 
+  summarise(variance = var(mean_rt))
+  
+rt_sd_plot <-
+  rt_sd_all %>% 
+  ggplot(aes(x = group, y = mean_rt)) +
+  geom_violin() +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  scale_x_discrete(limits = c("experimental", "control" )) +
+  ylab("Personal mean reaction time (ms)")+
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+rt_sd_plot
+
+ggsave("figures/rt_sd.png", width = 9, height = 8, plot = last_plot())
+```
+
+## Comparing personal mean accuracy in the experimental and control groups
+
+```{r}
+acc_sd_data_exp <- dl_processed_acc %>% 
+  select(participant_id, prop) %>% 
+  distinct(participant_id, prop) %>% 
+  mutate(group = "experimental")
+
+acc_sd_data_control <- nodl_processed_acc %>% 
+  select(participant_id, prop) %>% 
+  distinct(participant_id, prop) %>% 
+  mutate(group = "control")
+
+acc_sd_all <-
+  bind_rows(acc_sd_data_exp, acc_sd_data_control)
+
+acc_sd_all %>% 
+  group_by(group) %>% 
+  summarise(variance = var(prop))
+  
+acc_sd_plot <-
+  acc_sd_all %>% 
+  ggplot(aes(x = group, y = prop)) +
+  geom_violin() +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  scale_x_discrete(limits = c("experimental", "control" )) +
+  ylab("Personal mean accuracy (%)")+
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+acc_sd_plot
+
+ggsave("figures/acc_sd.png", width = 9, height = 8, plot = last_plot())
 ```
 
