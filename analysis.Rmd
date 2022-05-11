@@ -669,6 +669,27 @@ ggsave("figures/deadline/panic_dl.png", width = 18, height = 8, plot = last_plot
 
 Analysing personal deadline. 
 
+Calibration analysis
+```{r}
+# read data
+calibration <- read_tsv("data/deadline/processed/calibration.tsv")
+
+# Deadlines were calculated based on the mean of correctly answered trials. Here we count how many trials were used for the deadline calculation.
+# calibration <- calibration %>%
+#   group_by(participant_id, blockId, correct) %>%
+#   summarise(n = n()) %>%
+#   group_by(participant_id, blockId) %>% 
+#   # mutate(N = sum(n)) %>% 
+#   mutate(prop = n / 28 * 100)
+
+# plot calibration accuracy data
+# calibration_plot <- calibration %>% 
+#   filter(correct == TRUE) %>% 
+#   group_by(participant_id, blockId) %>% 
+#   ggplot(aes(x = blockId, y = n)) +
+#   geom_dotplot(binaxis = "x")
+```
+
 Get the mean and sd of deadlines for each participant.
 ```{r}
 personal_deadline <- dl_processed_acc %>% 

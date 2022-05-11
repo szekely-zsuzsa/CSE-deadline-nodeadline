@@ -1,0 +1,10 @@
+.Rproj.user
+.Rhistory
+.RData
+*.csv
+*.tsv
+*.png
+*.html
+.Ruserdata
+data/deadline/source/
+data/nodeadline/source/

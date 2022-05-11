@@ -159,6 +159,18 @@ response %>%
 # calculate accuracy of respondents and create variable (dropParticipantAcc) for accuracy-based exclusion. accuracy is calculated in case of calibration and test trials (therefore we use cal_test df)
 
 ```{r}
+# calculate accuracy of calibration trials for later analysis
+calibration_accuracy <- response %>%
+  filter(section == "calibration") %>% 
+  group_by(participant_id, blockId, correct) %>%
+  summarise(n = n()) %>%
+  mutate(N = sum(n),
+         prop = n / N * 100)
+
+# save calibration accuracy data
+write_tsv(calibration_accuracy, "data/deadline/processed/calibration.tsv")
+
+# calculate accuracy for exclusions
 response %>%
   group_by(participant_id, correct) %>%
   summarise(n = n()) %>%
@@ -224,8 +236,7 @@ response %>%
   group_by(participant_id, section, blockId) %>%
   mutate(mean_duration = mean(duration, na.rm = TRUE)) %>%
   distinct(participant_id, section, blockId, duration, personalDeadline, mean_duration) %>% 
-  ungroup() %>% 
-  View()
+  ungroup()
 ```
 
 Calucalte the mean response time and SD for exclusion
