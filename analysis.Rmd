@@ -99,12 +99,11 @@ dl_cse_plot_rt <- dl_cse_plot_rt_data %>%
              group = isCongruent)) +
   geom_path() +
   geom_point(size = 2) +
-  ylim(530,630)+
+  ylim(530,760) +
   geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), width=.1) +
   scale_color_manual(values=c("#4472c4", "#F26C4F")) +
-  # scale_y_continuous(limits = c(500, 600)) +
+  # scale_y_continuous(limits = c(540, 760)) +
   # scale_x_discrete(expand=c(1, 0)) +
-  # ggtitle(stringr::str_to_title()) +
   xlab("Congruency of the previous trial")+
   ylab("Mean reaction time (ms)") +
   guides(color = guide_legend(title="Congruency of \n the current trial")) +
@@ -157,6 +156,7 @@ dl_cse_plot_rt_hun <- dl_cse_plot_rt_data_hun %>%
              group = isCongruent)) +
   geom_path() +
   geom_point(size = 2) +
+  ylim(530,760) +
   geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), width=.1) +
   scale_color_manual(values=c("#4472c4", "#F26C4F")) +
   # scale_y_continuous(limits = c(500, 600)) +
@@ -165,16 +165,19 @@ dl_cse_plot_rt_hun <- dl_cse_plot_rt_data_hun %>%
   xlab("Előző próba kongruenciája")+
   ylab("Átlagos reakcióidő (ms)") +
   guides(color = guide_legend(title="Próba \nkongruenciája")) +
-  theme(legend.position = c(0.85, 0.5),
-        axis.line = element_line(color = "black"),
+  theme(axis.line = element_line(color = "black"),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
         panel.background = element_blank(),
-        legend.key = element_rect(colour = "transparent", fill = "white"))
+        legend.key = element_rect(colour = "transparent", fill = "white", size = 20))
 ```
 
 ## Saving the rt CSE Hungarian figures
 
 ```{r, eval= FALSE}
-ggsave("figures/deadline/rt_cse_hun.png", width = 14.4, height = 8, plot = last_plot())
+ggsave("figures/deadline/rt_cse_hun.png", width = 8, height = 8, plot = last_plot())
 ```
 
 # Checking CSE for accuracy in
@@ -270,17 +273,22 @@ dl_cse_plot_acc <- dl_cse_plot_acc_data_hun %>%
   # ggtitle(stringr::str_to_title()) +
   xlab("Előző próba kongruenciája")+
   ylab("Pontosság (%)") +
-  guides(color = guide_legend(title="Próba \nkongruenciája")) 
-  # + theme(legend.position = c(0.85, 0.5),
-  #       axis.line = element_line(color = "black"),
-  #       panel.background = element_blank(),
-  #       legend.key = element_rect(colour = "transparent", fill = "white"))
+  guides(color = guide_legend(title="Próba \nkongruenciája")) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = c(0.74, 0.97)) +
+  theme(axis.line = element_line(color = "black"),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "transparent", fill = "white", size = 20))
 ```
 
 ## Saving the Hungarian accuracy CSE figure
 
 ```{r, eval= FALSE}
-ggsave("figures/deadline/acc_cse_hun.png", width = 14.4, height = 8, plot = last_plot())
+ggsave("figures/deadline/acc_cse_hun.png", width = 8, height = 8, plot = last_plot())
 ```
 
 
@@ -343,7 +351,7 @@ dl_rt_anova_eta <- dl_rt_anova %>%
 summary(dl_rt_anova_eta)
 ```
 
-# Bayes
+# Bayes for CSE
 
 ```{r}
 dl_rt_bayes <- dl_rt_anova %>%
@@ -357,7 +365,7 @@ dl_rt_bayes <- dl_rt_anova %>%
                                 filter(!is.na(fValue))
 ```
 
-We are calculating the mean effects (main congruency effect of current trial, main congruency effect of previous trial and interaction effect) for each task.
+We are calculating the mean effects (main congruency effect of current trial, main congruency effect of previous trial and interaction effect).
 
 ```{r}
 dl_rt_raw_effect <- dl_rt_effect_data %>% 
@@ -389,7 +397,7 @@ Calculating the prior.
 dl_rt_prior <- mean(dl_rt_effect_data$congruencyEffect)/2
 ```
 
-Calculating the BF for nodl accuracy CSE.
+Calculating the BF for dl rt CSE.
 
 ```{r}
 Bf(sd = 119.388230,
@@ -397,6 +405,18 @@ Bf(sd = 119.388230,
    dfdata = 54 - 1,
    meanoftheory = 0,
    sdtheory = dl_rt_prior,
+   dftheory = 10^10,
+   tail = 1)
+```
+
+Calculating the BF for dl rt CSE.
+
+```{r}
+Bf(sd = 21.792933,
+   obtained = 46.740141,
+   dfdata = 54 - 1,
+   meanoftheory = 0,
+   sdtheory = 92.52, # based on Weissman et al. 2014
    dftheory = 10^10,
    tail = 1)
 ```
@@ -528,13 +548,24 @@ Calculating the BF for dl accuracy CSE.
 ```{r}
 Bf(sd = 0.0199977,
    obtained = 0.01615512,
-   dfdata = 45 - 1,
+   dfdata = 54 - 1,
    meanoftheory = 0,
    sdtheory = dl_acc_prior,
    dftheory = 10^10,
    tail = 1)
 ```
 
+Calculating the BF for dl accuracy CE.
+
+```{r}
+Bf(sd = 0.0201650443,
+   obtained = 0.1198930103,
+   dfdata = 54 - 1,
+   meanoftheory = 0,
+   sdtheory = 0.0093, # based on Weissman et al. 2014
+   dftheory = 10^10,
+   tail = 1)
+```
 
 
 
@@ -551,7 +582,8 @@ create df for strategy analysis
 dl_strategy <- dl_processed_acc %>% 
   select(participant_id, blockId, correct, reaction_time, congruency, personalDeadline) %>%
   filter(correct == FALSE) %>%
-  mutate(timeout = is.na(reaction_time)) 
+  mutate(blockId = as.factor(blockId),
+         timeout = is.na(reaction_time)) 
 ```
 
 examining the proportion of timeout trials within erronous trials
@@ -581,8 +613,10 @@ dl_timeout_plot <-
   distinct(participant_id, prop_mean) %>% 
   ggplot(aes(x = prop_mean)) +
   geom_histogram() +
-  stat_bin(binwidth = 10) +
-  xlab("Proportion of timeout trials (%)") +
+  # stat_bin(binwidth = 10) +
+  xlab("Kihagyott próbák aránya az összes elhibázott próbához viszonyítva (%)") +
+  ylab("Résztvevők száma") +
+  scale_y_continuous(expand = c(0,0)) +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -590,17 +624,16 @@ dl_timeout_plot <-
         axis.title.x = element_text(margin = margin(t = 20)))
 
 # save plot
-ggsave("figures/deadline/timeout_prop.png", width = 14.4, height = 8, plot = last_plot())
+ggsave("figures/deadline/timeout_prop_hun.png", width = 14.4, height = 8, plot = last_plot())
 
 # ??? 
 dl_timeout_blocks_plot <-
   dl_timeout %>%
   group_by(blockId) %>%
   ggplot(aes(x = blockId, y = prop)) +
-  geom_violin() +
-  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
-  xlab("Block number") +
-  ylab("Proportion of timeout trials (%)") +
+  geom_boxplot() +
+  xlab("Blokk sorszáma") +
+  ylab("Kihagyott próbák aránya az összes elhibázott próbához viszonyítva (%)") +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -608,7 +641,7 @@ dl_timeout_blocks_plot <-
         axis.title.x = element_text(margin = margin(t = 20)))
 
 # save plot
-ggsave("figures/deadline/timeout_blocks.png", width = 18, height = 8, plot = last_plot())
+ggsave("figures/deadline/timeout_blocks_hun.png", width = 18, height = 10, plot = last_plot())
 ```
 
 
@@ -628,28 +661,76 @@ dl_panic <- dl_strategy %>%
 
 plot panic data
 ```{r}
-# ???
-dl_panic_blocks_plot <- dl_panic %>%
+# the proportion of incorrectly answered congruent trials within all erronous (including timeout) congruent trials
+
+## boxplot
+dl_panic_blocks_boxplot <- dl_panic %>%
   group_by(blockId) %>% 
   ggplot(aes(x = blockId, y = prop)) +
-  geom_violin() +
-  geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
-  xlab("Block number") +
-  ylab("Proportion of incorrect congruent trials (%)") +
+  geom_boxplot() +
+  xlab("Blokk sorszáma") +
+  ylab("A hibásan megválaszolt kongruens próbák aránya (%)") +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
         axis.title.y = element_text(margin = margin(r = 20)),
         axis.title.x = element_text(margin = margin(t = 20)))
 
-dl_panic_dl <- dl_strategy %>% 
+## save plot
+ggsave("figures/deadline/panic_prop_hun.png", width = 18, height = 8, plot = last_plot())
+
+## same on violinplot
+dl_panic_blocks_violinplot <- dl_panic %>%
   group_by(blockId) %>% 
+  ggplot(aes(x = blockId, y = prop)) +
+  geom_violin() +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
+  xlab("Blokk sorszáma") +
+  ylab("A hibásan megválaszolt kongruens próbák aránya (%)") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+## count instead of proportion on the y axis
+dl_panic_blocks_violinplot_2 <- dl_panic %>%
+  group_by(blockId) %>% 
+  ggplot(aes(x = blockId, y = n)) +
+  geom_violin() +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
+  xlab("Blokk sorszáma") +
+  ylab("A hibásan megválaszolt kongruens próbák száma") +
+  scale_y_continuous(limits = c(0, 12),
+                     expand = c(0,0)) +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+## save plot
+ggsave("figures/deadline/panic_blocks_violin_hun.png", width = 18, height = 8, plot = last_plot())
+
+# panic answers in connection with the deadlines
+dl_panic_dl <- dl_strategy %>% 
+  group_by(participant_id, blockId) %>% 
   filter(congruency == "con", timeout == FALSE) %>% 
-    ggplot(aes(x = personalDeadline)) +
-  geom_histogram() +
-  stat_bin(binwidth = 50) +
-  xlab("Personal deadline (ms)") +
-  ylab("Number of incorrectly answered congruent trials")
+  mutate(n = n()) %>% 
+  ggplot(aes(x = personalDeadline, y = n)) +
+  geom_point() +
+  xlab("Egyéni reakcióidő-korlát (ms)") +
+  ylab("A hibásan megválaszolt kongruens próbák száma") +
+  scale_y_continuous(limits = c(0,12),
+                     expand = c(0,0)) +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -657,7 +738,7 @@ dl_panic_dl <- dl_strategy %>%
         axis.title.x = element_text(margin = margin(t = 20)))
   
 # save plot
-ggsave("figures/deadline/panic_dl.png", width = 18, height = 8, plot = last_plot())
+ggsave("figures/deadline/panic_dl_hun.png", width = 18, height = 8, plot = last_plot())
 ```
 
 
@@ -683,11 +764,74 @@ calibration <- read_tsv("data/deadline/processed/calibration.tsv")
 #   mutate(prop = n / 28 * 100)
 
 # plot calibration accuracy data
-# calibration_plot <- calibration %>% 
-#   filter(correct == TRUE) %>% 
-#   group_by(participant_id, blockId) %>% 
-#   ggplot(aes(x = blockId, y = n)) +
-#   geom_dotplot(binaxis = "x")
+calibration_plot <- calibration %>%
+  filter(correct == TRUE) %>%
+  ggplot(aes(x = blockId, y = n)) +
+  geom_point()
+
+cal_plot_1 <- calibration %>% 
+  filter(correct == TRUE,
+         blockId == 1) %>% 
+  ggplot(aes(x = n)) +
+  geom_bar() +
+  scale_x_continuous(limits = c(12, 29)) +
+  scale_y_continuous(limits = c(0, 30),
+                     expand = c(0,0)) +
+  xlab("A helyesen megválaszolt kalibrációs próbák száma (1. blokk)") +
+  ylab("Résztvevők száma") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+cal_plot_2 <- calibration %>% 
+  filter(correct == TRUE,
+         blockId == 2) %>% 
+  ggplot(aes(x = n)) +
+  geom_bar()+
+  scale_x_continuous(limits = c(12, 29)) +
+  scale_y_continuous(limits = c(0, 30),
+                     expand = c(0,0)) +
+  xlab("A helyesen megválaszolt kalibrációs próbák száma (2. blokk)") +
+  ylab("Résztvevők száma") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+cal_plot_3 <- calibration %>% 
+  filter(correct == TRUE,
+         blockId == 3) %>% 
+  ggplot(aes(x = n)) +
+  geom_bar()+
+  scale_x_continuous(limits = c(12, 29)) +
+  scale_y_continuous(limits = c(0, 30),
+                     expand = c(0,0)) +
+  xlab("A helyesen megválaszolt kalibrációs próbák száma (3. blokk)") +
+  ylab("Résztvevők száma") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+cal_plot_4 <- calibration %>% 
+  filter(correct == TRUE,
+         blockId == 4) %>% 
+  ggplot(aes(x = n)) +
+  geom_bar() +
+  scale_x_continuous(limits = c(12, 29)) +
+  scale_y_continuous(limits = c(0, 30),
+                     expand = c(0,0)) +
+  xlab("A helyesen megválaszolt kalibrációs próbák száma (4. blokk)") +
+  ylab("Résztvevők száma") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
 ```
 
 Get the mean and sd of deadlines for each participant.
@@ -730,9 +874,13 @@ block_deadline_plot <- block_deadline_plot_data %>%
   ggplot(aes(x = blockId, y = personalDeadline)) +
   geom_violin() +
   geom_dotplot(binaxis = 'y', stackdir = 'center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
   # geom_abline(slope = cf[2], intercept = cf[1], size = 1, color = "blue") +
-  xlab("Block number") +
-  ylab("Personal deadline (ms)") +
+  xlab("Blokk sorszáma") +
+  ylab("Egyéni reakcióidő-korlát (ms)") +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -740,7 +888,7 @@ block_deadline_plot <- block_deadline_plot_data %>%
         axis.title.x = element_text(margin = margin(t = 20)))
 
 # save plot
-ggsave("figures/deadline/deadline_block_3.png", width = 18, height = 8, plot = last_plot())
+ggsave("figures/deadline/deadline_block_hun.png", width = 18, height = 8, plot = last_plot())
 ```
 
 Check mean deadline per blocks.
@@ -885,6 +1033,8 @@ dl_and_rt_cse_block_plot <-
   scale_y_continuous(limits = c(-110, 120))
 
 dl_and_rt_cse_block_plot
+
+
 ```
 
 
@@ -1022,6 +1172,7 @@ nodl_cse_plot_rt_hun <- nodl_cse_plot_rt_data_hun %>%
              group = isCongruent)) +
   geom_path() +
   geom_point(size = 2) +
+  ylim(530,760) +
   geom_errorbar(aes(ymin = mean_rt - se_rt, ymax = mean_rt + se_rt), width=.1) +
   scale_color_manual(values=c("#4472c4", "#F26C4F")) +
   # scale_y_continuous(limits = c(500, 600)) +
@@ -1029,17 +1180,20 @@ nodl_cse_plot_rt_hun <- nodl_cse_plot_rt_data_hun %>%
   # ggtitle(stringr::str_to_title()) +
   xlab("Előző próba kongruenciája")+
   ylab("Átlagos reakcióidő (ms)") +
-  guides(color = guide_legend(title="Próba \nkongruenciája")) 
-  # + theme(legend.position = c(0.85, 0.5),
-  #       axis.line = element_line(color = "black"),
-  #       panel.background = element_blank(),
-  #       legend.key = element_rect(colour = "transparent", fill = "white"))
+  guides(color = guide_legend(title="Próba \n kongruenciája")) +
+  theme(axis.line = element_line(color = "black"),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "transparent", fill = "white", size = 20))
 ```
 
 ## Saving the rt CSE Hungarian figures
 
 ```{r, eval= FALSE}
-ggsave("figures/nodeadline/rt_cse_hun.png", width = 14.4, height = 8, plot = last_plot())
+ggsave("figures/nodeadline/rt_cse_hun.png", width = 8, height = 8, plot = last_plot())
 ```
 
 # Checking CSE for accuracy in
@@ -1130,22 +1284,24 @@ nodl_cse_plot_acc <- nodl_cse_plot_acc_data_hun %>%
   geom_point(size = 2) +
   geom_errorbar(aes(ymin = mean_acc - se_acc, ymax = mean_acc + se_acc), width=.1) +
   scale_color_manual(values=c("#4472c4", "#F26C4F")) +
-  # scale_y_continuous(limits = c(500, 600)) +
-  # scale_x_discrete(expand=c(1, 0)) +
-  # ggtitle(stringr::str_to_title()) +
   xlab("Előző próba kongruenciája")+
   ylab("Pontosság (%)") +
-  guides(color = guide_legend(title="Próba \nkongruenciája")) 
-  # + theme(legend.position = c(0.85, 0.5),
-  #       axis.line = element_line(color = "black"),
-  #       panel.background = element_blank(),
-  #       legend.key = element_rect(colour = "transparent", fill = "white"))
+  guides(color = guide_legend(title="Próba \nkongruenciája")) +
+  scale_y_continuous(labels = scales::percent,
+                     limits = c(0.74, 0.97)) +
+  theme(axis.line = element_line(color = "black"),
+        axis.text = element_text(size = 20),
+        axis.title = element_text(size = 20),
+        legend.title = element_text(size = 20),
+        legend.text = element_text(size = 20),
+        panel.background = element_blank(),
+        legend.key = element_rect(colour = "transparent", fill = "white", size = 20))
 ```
 
 ## Saving the Hungarian accuracy CSE figure
 
 ```{r, eval= FALSE}
-ggsave("figures/nodeadline/acc_cse_hun.png", width = 14.4, height = 8, plot = last_plot())
+ggsave("figures/nodeadline/acc_cse_hun.png", width = 8, height = 8, plot = last_plot())
 ```
 
 
@@ -1254,7 +1410,7 @@ Calculating the prior.
 nodl_rt_prior <- mean(nodl_rt_effect_data$congruencyEffect)/2
 ```
 
-Calculating the BF for nodl accuracy CSE.
+Calculating the BF for nodl rt CSE.
 
 ```{r}
 Bf(sd = 68.06624,
@@ -1266,7 +1422,19 @@ Bf(sd = 68.06624,
    tail = 1)
 ```
 
-As the BF falls between 1/3 and 3, it means that it's inconclusive.
+Calculating the BF for nodl rt CE.
+
+```{r}
+Bf(sd = 42.35225,
+   obtained = 97.851002,
+   dfdata = 63 - 1,
+   meanoftheory = 0,
+   sdtheory = 92.52,
+   dftheory = 10^10,
+   tail = 1)
+```
+
+As the BF regarding CSE falls between 1/3 and 3, it means that it's inconclusive.
 
 ***
 
@@ -1401,6 +1569,17 @@ Bf(sd = 0.01771895,
    tail = 1)
 ```
 
+Calculating the BF for nodl accuracy CE.
+
+```{r}
+Bf(sd = 0.01410812,
+   obtained = 0.029669408,
+   dfdata = 63 - 1,
+   meanoftheory = 0,
+   sdtheory = 0.0093,
+   dftheory = 10^10,
+   tail = 1)
+```
 
 
 
@@ -1408,12 +1587,99 @@ Bf(sd = 0.01771895,
 
 # COMPARING DEADLINE AND NO-DEADLINE DATA
 We would like to know if there is significant difference 
-* 1. between the CSE scores of dl and no-dl data.
-* 2. in the variance of accuracy between the dl and no-dl condition.
+* 1. between the CS scores of dl and no-dl data.
+* 2. between the CSE scores of dl and no-dl data.
+* 3. in the variance of accuracy between the dl and no-dl condition.
 
-## Comparing CSE scores
+Create df containing dl and nodl CSE data as well.
 
-As we only had significant CSE in case of accuracy (both in the experimental and the control group), we analyze only these data.
+## Comparing personal CE scores
+```{r}
+# acc data
+ce_acc_exp <- dl_acc_effect_data %>% 
+  mutate(group = "experimental")
+
+ce_acc_control <- nodl_acc_effect_data %>% 
+  mutate(group = "control")
+
+ce_acc_all <- 
+  bind_rows(ce_acc_exp, ce_acc_control)
+
+# rt data
+ce_rt_exp <- dl_rt_effect_data %>% 
+  mutate(group = "experimental")
+
+ce_rt_control <- nodl_rt_effect_data %>% 
+  mutate(group = "control")
+
+ce_rt_all <- 
+  bind_rows(ce_rt_exp, ce_rt_control)
+```
+
+Check the distribution of personal CSE effect sizes in the experimental and control group.
+```{r}
+# in case of accuracy
+ce_acc_all %>% 
+  distinct(participant_id, congruencyEffect)
+
+ce_acc_plot <-
+  ce_acc_all %>% 
+  ggplot(aes(x = group, y = congruencyEffect)) +
+  geom_hline(yintercept = 0,
+             color = "gray") +
+  geom_violin(fill = "transparent") +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
+  scale_x_discrete(limits = c("experimental", "control" ),
+                   labels = c("kísérleti", "kontroll")) +
+  xlab("Csoport") +
+  ylab("Pontosságra vonatkozó \n egyéni CE-hatásnagyságok (%)") +
+  scale_y_continuous(labels = scales::percent) +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+ce_acc_plot
+
+ggsave("figures/ce_acc_effect_size_hun.png", width = 10, height = 8, plot = last_plot())
+
+# in case of rt
+ce_rt_all %>% 
+  distinct(participant_id, congruencyEffect)
+
+ce_rt_plot <-
+  ce_rt_all %>% 
+  ggplot(aes(x = group, y = congruencyEffect)) +
+  geom_hline(yintercept = 0,
+             color = "gray") +
+  geom_violin(fill = "transparent") +
+  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
+  scale_x_discrete(limits = c("experimental", "control" ),
+                   labels = c("kísérleti", "kontroll")) +
+  xlab("Csoport") +
+  ylab("Reakcióidőre vonatkozó \n egyéni CE-hatásnagyságok (ms)")+
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+ce_rt_plot
+
+ggsave("figures/ce_rt_effect_size_hun.png", width = 10, height = 8, plot = last_plot())
+```
+
+
+## Comparing personal CSE scores
 
 Create df containing dl and nodl CSE data as well.
 ```{r}
@@ -1447,10 +1713,19 @@ cse_acc_all %>%
 cse_acc_plot <-
   cse_acc_all %>% 
   ggplot(aes(x = group, y = cseEffect)) +
-  geom_violin() +
+  geom_hline(yintercept = 0,
+             color = "gray") +
+  geom_violin(fill = "transparent") +
   geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
-  scale_x_discrete(limits = c("experimental", "control" )) +
-  ylab("Personal CSE (acc) effect size")+
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
+  scale_x_discrete(limits = c("experimental", "control" ),
+                   labels = c("kísérleti", "kontroll")) +
+  xlab("Csoport") +
+  ylab("Pontosságra vonatkozó \n egyéni CSE-hatásnagyságok (%)") +
+  scale_y_continuous(labels = scales::percent) +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -1459,7 +1734,7 @@ cse_acc_plot <-
 
 cse_acc_plot
 
-ggsave("figures/cse_acc_effect_size_2.png", width = 9, height = 8, plot = last_plot())
+ggsave("figures/cse_acc_effect_size_hun.png", width = 10, height = 8, plot = last_plot())
 
 # in case of rt
 cse_rt_all %>% 
@@ -1468,10 +1743,18 @@ cse_rt_all %>%
 cse_rt_plot <-
   cse_rt_all %>% 
   ggplot(aes(x = group, y = cseEffect)) +
-  geom_violin() +
+  geom_hline(yintercept = 0,
+             color = "gray") +
+  geom_violin(fill = "transparent") +
   geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
-  scale_x_discrete(limits = c("experimental", "control" )) +
-  ylab("Personal CSE (rt) effect size")+
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
+  scale_x_discrete(limits = c("experimental", "control" ),
+                   labels = c("kísérleti", "kontroll")) +
+  xlab("Csoport") +
+  ylab("Reakcióidőre vonatkozó \n egyéni CSE-hatásnagyságok (ms)")+
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -1480,7 +1763,7 @@ cse_rt_plot <-
 
 cse_rt_plot
 
-ggsave("figures/cse_rt_effect_size_2.png", width = 9, height = 8, plot = last_plot())
+ggsave("figures/cse_rt_effect_size_hun.png", width = 10, height = 8, plot = last_plot())
 ```
 
 ## Comparing personal mean reaction times in the experimental and control groups
@@ -1512,8 +1795,16 @@ rt_sd_plot <-
   ggplot(aes(x = group, y = mean_rt)) +
   geom_violin() +
   geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
-  scale_x_discrete(limits = c("experimental", "control" )) +
-  ylab("Personal mean reaction time (ms)")+
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
+  # geom_hline(yintercept = 0) +
+  scale_x_discrete(limits = c("experimental", "control" ),
+                   labels = c("kísérleti", "kontroll")) +
+  # scale_y_continuous(expand = c(0, 1500)) +
+  xlab("Csoport") +
+  ylab("Egyéni átlagos reakcióidő (ms)") +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -1522,7 +1813,7 @@ rt_sd_plot <-
 
 rt_sd_plot
 
-ggsave("figures/rt_sd.png", width = 9, height = 8, plot = last_plot())
+ggsave("figures/rt_sd_hun.png", width = 10, height = 8, plot = last_plot())
 ```
 
 ## Comparing personal mean accuracy in the experimental and control groups
@@ -1550,8 +1841,15 @@ acc_sd_plot <-
   ggplot(aes(x = group, y = prop)) +
   geom_violin() +
   geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
-  scale_x_discrete(limits = c("experimental", "control" )) +
-  ylab("Personal mean accuracy (%)")+
+  stat_summary(fun = "mean",
+               geom = "point",
+               size = 3,
+               color = "#F26C4F") +
+  # geom_hline(yintercept = 0) +
+  scale_x_discrete(limits = c("experimental", "control" ),
+                   labels = c("kísérleti", "kontroll")) +
+  xlab("Csoport") +
+  ylab("Egyéni átlagos pontosság (%)")+
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -1560,6 +1858,6 @@ acc_sd_plot <-
 
 acc_sd_plot
 
-ggsave("figures/acc_sd.png", width = 9, height = 8, plot = last_plot())
+ggsave("figures/acc_sd_hun.png", width = 10, height = 8, plot = last_plot())
 ```
 
