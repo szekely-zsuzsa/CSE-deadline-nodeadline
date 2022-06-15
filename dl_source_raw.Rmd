@@ -79,8 +79,7 @@ source %>%
   group_by(participant_id) %>%
   count(ended_on) %>% 
   # filter unfinished task completions
-  filter(any(is.na(ended_on))) %>% 
-  View()
+  filter(any(is.na(ended_on)))
 
 # 4 participants (participant_id: 13, 14, 35, 48) did not finish the task. We save these participants' data into a separate df and exclude them from source df.
 exclude <- c("13", "14", "35", "48")
@@ -101,6 +100,11 @@ We need to remove any information that might identify the participants
 # join <- 
 #   join %>% 
 #   mutate(join = select(., -userId))
+
+anonym <- source %>% 
+  select(-fneptun)
+
+write_csv(source, "data/deadline/raw/deadline_anonym_raw_data.csv")
 ```
 
 Save source data to file

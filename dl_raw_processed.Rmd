@@ -150,8 +150,7 @@ response %>%
                               section == "test" & n == 324 ~ "complete", 
                               TRUE ~ "incomplete"
                               )) %>% 
-  ungroup() %>% 
-  count(complete) # the result should equal to the number of participants (57) * 3
+  count(complete) # the result should equal to the number of participants (57) 
 ```
 
 * 2. participants with mean accuracy below 70% of the mean accuracy of the whole sample will be excluded
@@ -194,7 +193,7 @@ response <-
 
 ```{r}
 response %>% 
-  distinct(participant_id, dropParticipantAcc) %>% 
+  distinct(participant_id, dropParticipantAcc) %>%
   group_by(dropParticipantAcc) %>%
   summarise(n = n()) %>% 
   ungroup()
@@ -229,14 +228,16 @@ response %>%
 
 We use the RT-s of the the calibration trials only, as their mean RT give the personal deadline for the test trials.
 
-First, we check if personal deadlines equal to the mean RT-s of the matching calibration sections
+First, we check if personal deadlines equal to the mean RT-s of the matching calibration sections (only correct answers were used for deadline calibration)
 
 ```{r}
 response %>% 
+  select(participant_id, section, blockId, correct, duration, personalDeadline) %>% 
   group_by(participant_id, section, blockId) %>%
+  filter(correct == TRUE,
+         section != "practice") %>% 
   mutate(mean_duration = mean(duration, na.rm = TRUE)) %>%
-  distinct(participant_id, section, blockId, duration, personalDeadline, mean_duration) %>% 
-  ungroup()
+  distinct(participant_id, mean_duration, personalDeadline)
 ```
 
 Calucalte the mean response time and SD for exclusion
@@ -252,6 +253,27 @@ participant_rt <- response %>%
   ungroup() %>% 
   mutate(grand_mean_duration = mean(duration, na.rm = TRUE),
          grand_sd_duration = sd(duration, na.rm = TRUE))
+
+participant_rt %>% 
+  distinct(participant_id, personal_mean_duration, personal_sd_duration, grand_mean_duration, grand_sd_duration)
+
+# the participant with the participant_id of 25 seems to be an outlier, i drop it now by hand
+participant_rt <- participant_rt %>% 
+  filter(participant_id != 25)
+
+# make calculations again for mean and sd of reaction time
+participant_rt <- participant_rt %>%
+  group_by(participant_id) %>%
+  filter(section == "calibration") %>% 
+  mutate(personal_mean_duration = mean(duration, na.rm = TRUE),
+         personal_sd_duration = sd(duration, na.rm = TRUE)) %>%
+  ungroup() %>% 
+  mutate(grand_mean_duration = mean(duration, na.rm = TRUE),
+         grand_sd_duration = sd(duration, na.rm = TRUE))
+
+participant_rt %>% 
+  distinct(participant_id, personal_mean_duration, personal_sd_duration, grand_mean_duration, grand_sd_duration) %>% 
+  count()
 
 # create variable indicating outliers
 participant_rt <- participant_rt %>% 
@@ -269,8 +291,6 @@ participant_rt %>%
   filter(drop_participant_rt == 1) %>%
   nrow()
 ```
-
-Since there is nobody to be excluded, the next 4 steps are not required.
 
 Get the number of participants per task before exclusion.
 
@@ -291,17 +311,18 @@ Get the id of the participants who will be dropped.
 Exclusion.
 
 ```{r participant level RT exclusion}
-# response <- response %>% 
-#   group_by(participant_id) %>% 
-#   filter(!participant_id == "")
+# exclude the outlier participant spotted earlier
+response <- response %>%
+  group_by(participant_id) %>%
+  filter(!participant_id == "25")
 ```
 
 Check if the exclusion was successful. There should be ... participants remaining.
   
 ```{r}
-# response %>% 
-#   distinct(participant_id) %>% 
-#   nrow()
+response %>%
+  distinct(participant_id) %>%
+  nrow()
 ```
 
 

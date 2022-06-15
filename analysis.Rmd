@@ -400,23 +400,11 @@ dl_rt_prior <- mean(dl_rt_effect_data$congruencyEffect)/2
 Calculating the BF for dl rt CSE.
 
 ```{r}
-Bf(sd = 119.388230,
-   obtained = 3.697240,
-   dfdata = 54 - 1,
+Bf(sd = 223.179656,
+   obtained = 3.216968,
+   dfdata = 53 - 1,
    meanoftheory = 0,
    sdtheory = dl_rt_prior,
-   dftheory = 10^10,
-   tail = 1)
-```
-
-Calculating the BF for dl rt CSE.
-
-```{r}
-Bf(sd = 21.792933,
-   obtained = 46.740141,
-   dfdata = 54 - 1,
-   meanoftheory = 0,
-   sdtheory = 92.52, # based on Weissman et al. 2014
    dftheory = 10^10,
    tail = 1)
 ```
@@ -546,27 +534,14 @@ dl_acc_prior <- mean(dl_acc_effect_data$congruencyEffect)/2
 Calculating the BF for dl accuracy CSE.
 
 ```{r}
-Bf(sd = 0.0199977,
-   obtained = 0.01615512,
-   dfdata = 54 - 1,
+Bf(sd = 0.0211059037,
+   obtained = 0.0185619294,
+   dfdata = 53 - 1,
    meanoftheory = 0,
    sdtheory = dl_acc_prior,
    dftheory = 10^10,
    tail = 1)
 ```
-
-Calculating the BF for dl accuracy CE.
-
-```{r}
-Bf(sd = 0.0201650443,
-   obtained = 0.1198930103,
-   dfdata = 54 - 1,
-   meanoftheory = 0,
-   sdtheory = 0.0093, # based on Weissman et al. 2014
-   dftheory = 10^10,
-   tail = 1)
-```
-
 
 
 
@@ -701,12 +676,13 @@ dl_panic_blocks_violinplot <- dl_panic %>%
 dl_panic_blocks_violinplot_2 <- dl_panic %>%
   group_by(blockId) %>% 
   ggplot(aes(x = blockId, y = n)) +
-  geom_violin() +
-  geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
-  stat_summary(fun = "mean",
-               geom = "point",
-               size = 3,
-               color = "#F26C4F") +
+  geom_boxplot() +
+  # geom_violin() +
+  # geom_dotplot(binaxis='y', stackdir='center', dotsize = 0.5) +
+  # stat_summary(fun = "mean",
+  #              geom = "point",
+  #              size = 3,
+  #              color = "#F26C4F") +
   xlab("Blokk sorszáma") +
   ylab("A hibásan megválaszolt kongruens próbák száma") +
   scale_y_continuous(limits = c(0, 12),
@@ -718,7 +694,7 @@ dl_panic_blocks_violinplot_2 <- dl_panic %>%
         axis.title.x = element_text(margin = margin(t = 20)))
 
 ## save plot
-ggsave("figures/deadline/panic_blocks_violin_hun.png", width = 18, height = 8, plot = last_plot())
+ggsave("figures/deadline/panic_blocks_box_hun.png", width = 18, height = 8, plot = last_plot())
 
 # panic answers in connection with the deadlines
 dl_panic_dl <- dl_strategy %>% 
@@ -768,6 +744,12 @@ calibration_plot <- calibration %>%
   filter(correct == TRUE) %>%
   ggplot(aes(x = blockId, y = n)) +
   geom_point()
+
+# cal_plot_data <- calibration %>% 
+#   filter(correct == TRUE) %>% 
+#   group_by(participant_id, blockId) %>% 
+#   distinct(n) %>% 
+#   pivot_wider(names_from = blockId, values_from = n)
 
 cal_plot_1 <- calibration %>% 
   filter(correct == TRUE,
@@ -832,6 +814,28 @@ cal_plot_4 <- calibration %>%
         text = element_text(size = 20),
         axis.title.y = element_text(margin = margin(r = 20)),
         axis.title.x = element_text(margin = margin(t = 20)))
+
+cal_plot <- calibration %>% 
+  filter(correct == TRUE) %>% 
+  mutate(block_label = case_when(blockId == 1 ~ "1. blokk",
+                                 blockId == 2 ~ "2. blokk",
+                                 blockId == 3 ~ "3. blokk",
+                                 blockId == 4 ~ "4. blokk")) %>% 
+  ggplot(aes(x = n)) +
+  geom_bar() +
+  facet_wrap(vars(block_label)) +
+  scale_x_continuous(limits = c(12, 29)) +
+  scale_y_continuous(limits = c(0, 30),
+                     expand = c(0,0)) +
+  xlab("A helyesen megválaszolt kalibrációs próbák száma") +
+  ylab("Résztvevők száma") +
+  theme(axis.line = element_line(color = "black"),
+        panel.background = element_blank(),
+        text = element_text(size = 20),
+        axis.title.y = element_text(margin = margin(r = 20)),
+        axis.title.x = element_text(margin = margin(t = 20)))
+
+ggsave("figures/deadline/calibration_blocks.png", width = 14.4, height = 8, plot = last_plot())
 ```
 
 Get the mean and sd of deadlines for each participant.
@@ -896,8 +900,7 @@ Check mean deadline per blocks.
 ```{r}
 block_deadline_plot_data %>% 
   group_by(blockId) %>% 
-  summarise(block_rt_mean = mean(personalDeadline)) %>% 
-  View()
+  summarise(block_rt_mean = mean(personalDeadline))
 ```
 
 Check how mean personal CSE scores change in connection with mean personal deadlines.
@@ -991,7 +994,7 @@ dl_and_rt_cse_block <-
 
 dl_and_rt_cse_block %>% 
   group_by(blockId) %>% 
-  summarise(mead_deadline = mean(personalDeadline),
+  summarise(mean_deadline = mean(personalDeadline),
             mean_cse = mean(cseEffect))
 
 dl_and_rt_cse_block_plot <-
@@ -1033,8 +1036,6 @@ dl_and_rt_cse_block_plot <-
   scale_y_continuous(limits = c(-110, 120))
 
 dl_and_rt_cse_block_plot
-
-
 ```
 
 
@@ -1422,18 +1423,6 @@ Bf(sd = 68.06624,
    tail = 1)
 ```
 
-Calculating the BF for nodl rt CE.
-
-```{r}
-Bf(sd = 42.35225,
-   obtained = 97.851002,
-   dfdata = 63 - 1,
-   meanoftheory = 0,
-   sdtheory = 92.52,
-   dftheory = 10^10,
-   tail = 1)
-```
-
 As the BF regarding CSE falls between 1/3 and 3, it means that it's inconclusive.
 
 ***
@@ -1569,19 +1558,6 @@ Bf(sd = 0.01771895,
    tail = 1)
 ```
 
-Calculating the BF for nodl accuracy CE.
-
-```{r}
-Bf(sd = 0.01410812,
-   obtained = 0.029669408,
-   dfdata = 63 - 1,
-   meanoftheory = 0,
-   sdtheory = 0.0093,
-   dftheory = 10^10,
-   tail = 1)
-```
-
-
 
 
 
@@ -1636,7 +1612,7 @@ ce_acc_plot <-
   scale_x_discrete(limits = c("experimental", "control" ),
                    labels = c("kísérleti", "kontroll")) +
   xlab("Csoport") +
-  ylab("Pontosságra vonatkozó \n egyéni CE-hatásnagyságok (%)") +
+  ylab("Pontosságra vonatkozó \n egyéni CE-hatásnagyságok") +
   scale_y_continuous(labels = scales::percent) +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
@@ -1666,7 +1642,7 @@ ce_rt_plot <-
   scale_x_discrete(limits = c("experimental", "control" ),
                    labels = c("kísérleti", "kontroll")) +
   xlab("Csoport") +
-  ylab("Reakcióidőre vonatkozó \n egyéni CE-hatásnagyságok (ms)")+
+  ylab("Reakcióidőre vonatkozó \n egyéni CE-hatásnagyságok")+
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -1724,7 +1700,7 @@ cse_acc_plot <-
   scale_x_discrete(limits = c("experimental", "control" ),
                    labels = c("kísérleti", "kontroll")) +
   xlab("Csoport") +
-  ylab("Pontosságra vonatkozó \n egyéni CSE-hatásnagyságok (%)") +
+  ylab("Pontosságra vonatkozó \n egyéni CSE-hatásnagyságok") +
   scale_y_continuous(labels = scales::percent) +
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
@@ -1754,7 +1730,7 @@ cse_rt_plot <-
   scale_x_discrete(limits = c("experimental", "control" ),
                    labels = c("kísérleti", "kontroll")) +
   xlab("Csoport") +
-  ylab("Reakcióidőre vonatkozó \n egyéni CSE-hatásnagyságok (ms)")+
+  ylab("Reakcióidőre vonatkozó \n egyéni CSE-hatásnagyságok")+
   theme(axis.line = element_line(color = "black"),
         panel.background = element_blank(),
         text = element_text(size = 20),
@@ -1788,7 +1764,9 @@ rt_sd_all <-
 
 rt_sd_all %>% 
   group_by(group) %>% 
-  summarise(variance = var(mean_rt))
+  summarise(mean = mean(mean_rt),
+            sd = sd(mean_rt),
+            variance = var(mean_rt))
   
 rt_sd_plot <-
   rt_sd_all %>% 
@@ -1834,7 +1812,9 @@ acc_sd_all <-
 
 acc_sd_all %>% 
   group_by(group) %>% 
-  summarise(variance = var(prop))
+  summarise(mean = mean(prop),
+            sd = sd(prop),
+            variance = var(prop))
   
 acc_sd_plot <-
   acc_sd_all %>% 
@@ -1859,5 +1839,56 @@ acc_sd_plot <-
 acc_sd_plot
 
 ggsave("figures/acc_sd_hun.png", width = 10, height = 8, plot = last_plot())
+```
+
+# prepare df-s for jasp BF analysis
+## for CE analysis
+```{r}
+dl_ce_acc_jasp <- dl_acc_conditions %>%
+  group_by(participant_id, congruency) %>% 
+  mutate(congruency_mean = mean(accConditionalMean)) %>% 
+  select(participant_id, congruency, congruency_mean) %>%
+  distinct(congruency_mean) %>% 
+  pivot_wider(names_from = congruency, values_from = congruency_mean)
+
+write_tsv(dl_ce_acc_jasp, "data/deadline/processed/acc_ce_jasp.tsv")
+
+dl_ce_rt_jasp <- dl_rt_conditions %>%
+  group_by(participant_id, congruency) %>% 
+  mutate(congruency_mean = mean(rtConditionalMean)) %>% 
+  select(participant_id, congruency, congruency_mean) %>%
+  distinct(congruency_mean) %>% 
+  pivot_wider(names_from = congruency, values_from = congruency_mean)
+
+write_tsv(dl_ce_rt_jasp, "data/deadline/processed/rt_ce_jasp.tsv")
+
+nodl_ce_acc_jasp <- nodl_acc_conditions %>%
+  group_by(participant_id, congruency) %>% 
+  mutate(congruency_mean = mean(accConditionalMean)) %>% 
+  select(participant_id, congruency, congruency_mean) %>%
+  distinct(congruency_mean) %>% 
+  pivot_wider(names_from = congruency, values_from = congruency_mean)
+
+write_tsv(nodl_ce_acc_jasp, "data/nodeadline/processed/acc_ce_jasp.tsv")
+
+nodl_ce_rt_jasp <- nodl_rt_conditions %>%
+  group_by(participant_id, congruency) %>% 
+  mutate(congruency_mean = mean(rtConditionalMean)) %>% 
+  select(participant_id, congruency, congruency_mean) %>%
+  distinct(congruency_mean) %>% 
+  pivot_wider(names_from = congruency, values_from = congruency_mean)
+
+write_tsv(nodl_ce_rt_jasp, "data/nodeadline/processed/rt_ce_jasp.tsv")
+```
+
+## for CSE analyis
+```{r}
+write_tsv(dl_acc_conditions, "data/deadline/processed/acc_cse_jasp.tsv")
+
+write_tsv(dl_rt_conditions, "data/deadline/processed/rt_cse_jasp.tsv")
+
+write_tsv(nodl_acc_conditions, "data/nodeadline/processed/acc_cse_jasp.tsv")
+
+write_tsv(nodl_rt_conditions, "data/nodeadline/processed/rt_cse_jasp.tsv")
 ```
 

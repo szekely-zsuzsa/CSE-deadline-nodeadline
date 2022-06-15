@@ -107,6 +107,11 @@ We need to remove any information that might identify the participants
 # join <- 
 #   join %>% 
 #   mutate(join = select(., -userId))
+
+anonym <- source %>% 
+  select(-fneptun)
+
+write_csv(source, "data/nodeadline/raw/nodeadline_anonym_raw_data.csv")
 ```
 
 Save source data to file
